@@ -175,35 +175,40 @@
                       <div class="form-group row">
                         <label for="inputName" class="col-sm-2 col-form-label">Nomor Transaksi</label>
                         <div class="col-sm-10">
-                          <input type="email" class="form-control" id="inputName" placeholder="Name">
+                          <input type="email" class="form-control" id="inputName">
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputEmail" class="col-sm-2 col-form-label">Customer</label>
                         <div class="col-sm-10">
-                          <input type="email" class="form-control" id="inputEmail" placeholder="Email">
+                          <input type="email" class="form-control" id="inputEmail">
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputName2" class="col-sm-2 col-form-label">Pegawai</label>
                         <div class="col-sm-10">
-                          <input type="text" class="form-control" id="inputName2" placeholder="Name">
+                          <input type="text" class="form-control" id="inputName2">
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputExperience" class="col-sm-2 col-form-label">Tanggal</label>
                         <div class="col-sm-10">
-                          <textarea class="form-control" id="inputExperience" placeholder="Experience"></textarea>
+                          <textarea class="form-control" id="inputExperience"></textarea>
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputSkills" class="col-sm-2 col-form-label">Diskon</label>
                         <div class="col-sm-10">
-                          <input type="text" class="form-control" id="inputSkills" placeholder="Skills">
+                          <input type="text" class="form-control" id="inputSkills">
                         </div>
                       </div>
-                      
-                      <h4>Pilih Barang <span><select class="form-control" id="productSelect"></select></span></h4>  
+                      <div class="form-group row">
+                        <label for="inputSkills" class="col-sm-2 col-form-label">Pilih Barang</label>
+                        <div class="col-sm-10">
+                            <select class="form-control" id="productSelect"></select>
+                        </div>
+                      </div>                      
+                      <!-- <h4>Pilih Barang <span><select class="form-control" id="productSelect"></select></span></h4>   -->
                       
                       <table id="productTable" class=" table stripped-table">
                             <thead>
@@ -216,13 +221,15 @@
                             </tbody>
                       </table>
 
-                      <h1 class="text-right">Total Penjualan <span><input id="totalPenjualan" type="text" width="50%"></span></h1>
+                      <h3 class="text-right">Total Penjualan <span><input id="totalPenjualan" type="number" width="50%" readonly></span></h3>
+                      <h3 class="text-right">Cash <span><input id="cash" type="number" width="50%"></span></h3>
+                      <h3 class="text-right">Kembalian <span><input id="kembalian" type="number" width="50%" readonly></span></h3>
 
-                      <div class="form-group row">
-                        <div class="offset-sm-2 col-sm-10">
-                          <button type="submit" class="btn btn-success">Submit</button>
-                        </div>
-                      </div>
+                      <!-- <div class="form-group row text-right">
+                        <div class=""> -->
+                          <button type="submit" class="btn btn-success text-right">Simpan</button>
+                        <!-- </div>
+                      </div> -->
 
                     </form>
 
@@ -276,6 +283,9 @@
 let rowCount = 0;
 
 $(document).ready(function () {
+    $('#cash').val('');
+    $('#totalPenjualan').val('');
+    $('#kembalian').val('');
     $('#productSelect').select2({
         placeholder: 'Search for a product',
         ajax: {
@@ -349,6 +359,11 @@ $(document).ready(function () {
 
         $('#totalPenjualan').val(grandTotal);
     }
+
+    // kembalian
+    $('#cash').on('blur', function() {
+        $('#kembalian').val($('#cash').val()-$('#totalPenjualan').val());
+    })
 
     // Remove row and update total
     $('#productTable').on('click', '.removeRow', function () {
