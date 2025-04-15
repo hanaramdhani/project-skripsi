@@ -229,25 +229,24 @@
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-book"></i>
                         <p>
-                            Data
+                            Transaksi
                             <i class="fas fa-angle-left right"></i>
                         </p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <!-- Pages -->
+                    <!-- <ul class="nav nav-treeview">
                         <li class="nav-item">
                             <a href="{{ url('pages') }}" class="nav-link {{ request()->is('pages') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Pages</p>
                             </a>
                         </li>
-                    </ul>
+                    </ul> -->
                     <ul class="nav nav-treeview">
                         <!-- Pages -->
                         <li class="nav-item">
-                            <a href="{{ url('pages') }}" class="nav-link {{ request()->is('pages') ? 'active' : '' }}">
+                            <a href="{{ url('penjualan') }}" class="nav-link {{ request()->is('pages') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Master</p>
+                                <p>Penjualan</p>
                             </a>
                         </li>
                     </ul>
@@ -338,6 +337,11 @@
 <script src="{{ asset('lte/dist/js/pages/dashboard.js') }}"></script>
 
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 
 </body>

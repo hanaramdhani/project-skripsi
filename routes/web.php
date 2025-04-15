@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\controllerPenjualan;
 use App\Http\Controllers\viewController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,4 +24,8 @@ Route::get('pages', [viewController::class,'Pages']);
 
 Route::post('/send-message', [viewController::class, 'sendMessage'])->name('send.message');
 
+
+// penjualan
+Route::get('penjualan', [controllerPenjualan::class,'viewPenjualan']);
+Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
 
