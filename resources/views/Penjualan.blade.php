@@ -208,7 +208,7 @@
                       <table id="productTable" class=" table stripped-table">
                             <thead>
                                 <tr>
-                                    <th>Barang</th><th>Satuan</th><th>Qty</th><th>Harga</th><th>Action</th>
+                                    <th>Barang</th><th>Satuan</th><th>Qty</th><th>Harga</th><th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -216,7 +216,7 @@
                             </tbody>
                       </table>
 
-                      <h1 class="text-right">Total Penjualan <span><input type="text" width="50%"></span></h1>
+                      <h1 class="text-right">Total Penjualan <span><input id="totalPenjualan" type="text" width="50%"></span></h1>
 
                       <div class="form-group row">
                         <div class="offset-sm-2 col-sm-10">
@@ -248,8 +248,32 @@
     <!-- /.content -->
   </div>
 
+  <!-- jQuery -->
+  
+  <script src="{{ asset('lte/plugins/jquery/jquery.min.js') }}"></script>
+<!-- Bootstrap 4 -->
+<script src="{{ asset('lte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<!-- DataTables  & Plugins -->
+<script src="{{ asset('lte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/jszip/jszip.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/pdfmake/pdfmake.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/pdfmake/vfs_fonts.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
+<!-- AdminLTE App -->
+<script src="{{ asset('lte/dist/js/adminlte.min.js') }}"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="{{ asset('lte/dist/js/demo.js') }}"></script>
+<!-- Page specific script -->
+
 <script>
-let rowCount = 1;
+let rowCount = 0;
 
 $(document).ready(function () {
     $('#productSelect').select2({
@@ -281,35 +305,55 @@ $(document).ready(function () {
             cache: true
         }
     });
+
     $('#productSelect').on('select2:select', function (e) {
         const data = e.params.data;
+        let html = `
+            <tr>
+                <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
+                <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
+                <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}"></td>
+                <td><input class="form-control harga" type="text" name="products[${rowCount}][price]" value="${data.harga}" data-row="${rowCount}" readonly></td>
+                <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
+                <td><button class="btn btn-danger btn-sm removeRow" type="button">Hapus</button></td>
+            </tr>`;
 
-        console.log('kd_barang:', data.id); // or data.kd_barang (they're the same)
-        console.log('barang:', data.barang);
-        console.log('kd_satuan:', data.kd_satuan);
-        console.log('satuan:', data.satuan);
-        console.log('harga:', data.harga);
-
-                   let html = `
-                <tr>
-                    <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" required></td>
-                    <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" required></td>
-                    <td><input class="form-control" type="number" name="products[${rowCount}][qty]" required></td>
-                    <td><input class="form-control" type="text" name="products[${rowCount}][price]" value="${data.harga}" required></td>
-                    <td><button class="btn btn-danger btn-sm removeRow" type="button">Hapus</button></td>
-                </tr>`;
-
-            $('#productTable tbody').append(html);
-            rowCount++;
+        $('#productTable tbody').append(html);
+        rowCount++;
     });
-});
 
+    // When quantity changes
+    $('#productTable').on('input', '.qty', function () {
+        let row = $(this).data('row');
 
+        // Get quantity and harga for this row
+        let qty = parseFloat($(this).val()) || 0;
+        let harga = parseFloat($(`input.harga[data-row="${row}"]`).val()) || 0;
 
-$(document).ready(function () {
-    $('#brg').select2({
-        placeholder: 'Pilih Barang',
-        allowClear: true
+        // Calculate total and update the input
+        let total = qty * harga;
+        $(`input.total_harga[data-row="${row}"]`).val(total);
+
+        // Update grand total
+        updateGrandTotal();
+    });
+
+    // Calculate grand total
+    function updateGrandTotal() {
+        let grandTotal = 0;
+
+        $('.total_harga').each(function () {
+            let total = parseFloat($(this).val()) || 0;
+            grandTotal += total;
+        });
+
+        $('#totalPenjualan').val(grandTotal);
+    }
+
+    // Remove row and update total
+    $('#productTable').on('click', '.removeRow', function () {
+        $(this).closest('tr').remove();
+        updateGrandTotal();
     });
 });
 
@@ -320,29 +364,7 @@ $(document).on('click', '.removeRow', function() {
 </script>
 
 
-  <!-- jQuery -->
-  
-  <script src="{{ asset('lte/plugins/jquery/jquery.min.js') }}"></script>
-<!-- Bootstrap 4 -->
-<script src="{{ asset('lte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-<!-- DataTables  & Plugins -->
-<script src="{{ asset('lte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/jszip/jszip.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/pdfmake/pdfmake.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/pdfmake/vfs_fonts.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
-<script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
-<!-- AdminLTE App -->
-<script src="{{ asset('lte/dist/js/adminlte.min.js') }}"></script>
-<!-- AdminLTE for demo purposes -->
-<script src="{{ asset('lte/dist/js/demo.js') }}"></script>
-<!-- Page specific script -->
+
 
 
 @endsection
