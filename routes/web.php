@@ -15,10 +15,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [viewController::class,'Dashboard']);
 
+// abaikan
 Route::get('dashboard', [viewController::class,'Dashboard']);
 Route::get('pages', [viewController::class,'Pages']);
 
@@ -28,4 +27,6 @@ Route::post('/send-message', [viewController::class, 'sendMessage'])->name('send
 // penjualan
 Route::get('penjualan', [controllerPenjualan::class,'viewPenjualan']);
 Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
+Route::post('/input-penjualan', [controllerPenjualan::class, 'inputPenjualan'])->name('input.penjualan');
+
 

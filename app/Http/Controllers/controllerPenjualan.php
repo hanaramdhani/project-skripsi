@@ -38,4 +38,37 @@ class controllerPenjualan extends Controller
                             WHERE m_barang.nama LIKE ? ORDER BY m_barang.nama", ["%$keyword%"]);
         return response()->json(['dataBarangSatuan'=>$dataBarangSatuan]);
     }
+
+    public function inputPenjualan(Request $request)
+    {
+        // echo "<pre>";
+        // print_r($_POST);
+        // echo "</pre>";
+
+        $no_transaksi = $request->no_transaksi;
+        $kd_customer = $request->kd_customer;
+        $kd_pegawai = $request->kd_pegawai;
+        $diskon = $request->diskon;
+
+
+        DB::insert("INSERT INTO t_penjualan 
+        (no_transaksi, kd_customer, kd_pegawai, kd_divisi, kd_kas, tanggal, diskon, keterangan, `status`)
+        VALUES
+        ('$no_transaksi', '$kd_customer', '$kd_pegawai', '-', '-', NOW(), $diskon, '-', 0)
+        ");
+
+        $products = $request->products;
+        foreach ($products as $product) {
+            $kd_barang = $product['kd_barang'];
+            $kd_satuan = $product['kd_satuan'];
+            $qty = $product['qty'];
+            $harga_jual = $product['harga_jual'];
+
+            DB::insert("INSERT INTO t_penjualan_detail 
+                    (no_transaksi, kd_barang, kd_satuan, jenis, harga_jual,qty, diskon, keterangan, `status`)
+                    VALUES
+                    ('$no_transaksi', '$kd_barang', '$kd_satuan', '1', '$harga_jual', '$qty', 0, '-', '1')");
+        }        
+        $this->viewPenjualan();
+    }
 }

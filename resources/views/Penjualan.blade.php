@@ -171,35 +171,36 @@
                   <!-- /.tab-pane -->
 
                   <div class="tab-pane" id="settings">
-                    <form class="form-horizontal">
+                    <form class="form-horizontal" method="POST" action="{{ route('input.penjualan') }}">
+                      @csrf
                       <div class="form-group row">
                         <label for="inputName" class="col-sm-2 col-form-label">Nomor Transaksi</label>
                         <div class="col-sm-10">
-                          <input type="email" class="form-control" id="inputName">
+                          <input type="text" name="no_transaksi" id="no_transaksi" class="form-control" value="">
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputEmail" class="col-sm-2 col-form-label">Customer</label>
                         <div class="col-sm-10">
-                          <input type="email" class="form-control" id="inputEmail">
+                          <input type="text" name="kd_customer" id="kd_customer" class="form-control" value="">
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputName2" class="col-sm-2 col-form-label">Pegawai</label>
                         <div class="col-sm-10">
-                          <input type="text" class="form-control" id="inputName2">
+                          <input type="text" name="kd_pegawai" id="kd_pegawai" class="form-control" value="">
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputExperience" class="col-sm-2 col-form-label">Tanggal</label>
                         <div class="col-sm-10">
-                          <textarea class="form-control" id="inputExperience"></textarea>
+                          <textarea class="form-control" name="tanggal" id="tanggal" value=""></textarea>
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputSkills" class="col-sm-2 col-form-label">Diskon</label>
                         <div class="col-sm-10">
-                          <input type="text" class="form-control" id="inputSkills">
+                          <input type="text" name="diskon" id="diskon" class="form-control" value="">
                         </div>
                       </div>
                       <div class="form-group row">
@@ -225,11 +226,9 @@
                       <h3 class="text-right">Cash <span><input id="cash" type="number" width="50%"></span></h3>
                       <h3 class="text-right">Kembalian <span><input id="kembalian" type="number" width="50%" readonly></span></h3>
 
-                      <!-- <div class="form-group row text-right">
-                        <div class=""> -->
-                          <button type="submit" class="btn btn-success text-right">Simpan</button>
-                        <!-- </div>
-                      </div> -->
+                      
+                       <button type="submit" class="btn btn-success text-right">Simpan</button>
+                      
 
                     </form>
 
@@ -283,9 +282,16 @@
 let rowCount = 0;
 
 $(document).ready(function () {
+    $('#no_transaksi').val('');
+    $('#kd_customer').val('');
+    $('#kd_pegawai').val('');
+    $('#tanggal').val('');
+    $('#diskon').val('');
     $('#cash').val('');
     $('#totalPenjualan').val('');
     $('#kembalian').val('');
+
+
     $('#productSelect').select2({
         placeholder: 'Search for a product',
         ajax: {
@@ -320,11 +326,13 @@ $(document).ready(function () {
         const data = e.params.data;
         let html = `
             <tr>
-                <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
-                <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
-                <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}"></td>
-                <td><input class="form-control harga" type="text" name="products[${rowCount}][price]" value="${data.harga}" data-row="${rowCount}" readonly></td>
-                <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
+            <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
+            <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
+            <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}"></td>
+            <td><input class="form-control harga" type="text" name="products[${rowCount}][harga_jual]" value="${data.harga}" data-row="${rowCount}" readonly></td>
+            <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
+            <td><input type="hidden" name="products[${rowCount}][kd_barang]" value="${data.kd_barang}" readonly></td>
+            <td><input type="hidden" name="products[${rowCount}][kd_satuan]" value="${data.kd_satuan}" readonly></td>
                 <td><button class="btn btn-danger btn-sm removeRow" type="button">Hapus</button></td>
             </tr>`;
 
@@ -375,6 +383,16 @@ $(document).ready(function () {
 $(document).on('click', '.removeRow', function() {
     $(this).closest('tr').remove();
 });
+
+$('#example2').DataTable({
+      "paging": true,
+      "lengthChange": true,
+      "searching": true,
+      "ordering": false,
+      "info": true,
+      "autoWidth": true,
+      "responsive": true
+    });
 
 </script>
 
