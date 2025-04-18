@@ -41,10 +41,6 @@ class controllerPenjualan extends Controller
 
     public function inputPenjualan(Request $request)
     {
-        // echo "<pre>";
-        // print_r($_POST);
-        // echo "</pre>";
-
         $no_transaksi = $request->no_transaksi;
         $kd_customer = $request->kd_customer;
         $kd_pegawai = $request->kd_pegawai;
@@ -69,6 +65,6 @@ class controllerPenjualan extends Controller
                     VALUES
                     ('$no_transaksi', '$kd_barang', '$kd_satuan', '1', '$harga_jual', '$qty', 0, '-', '1')");
         }        
-        $this->viewPenjualan();
+        return $this->viewPenjualan();
     }
 }
