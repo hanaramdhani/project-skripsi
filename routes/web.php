@@ -25,9 +25,10 @@ Route::post('/send-message', [viewController::class, 'sendMessage'])->name('send
 
 
 // penjualan
-Route::get('penjualan', [controllerPenjualan::class,'viewPenjualan']);
+Route::get('penjualan', [controllerPenjualan::class,'viewPenjualan'])->name('index.penjualan');
 Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
 Route::post('/input-penjualan', [controllerPenjualan::class, 'inputPenjualan'])->name('input.penjualan');
+Route::post('/edit-penjualan', [controllerPenjualan::class, 'editPenjualan'])->name('edit.penjualan');
 Route::get('/detail-penjualan', [controllerPenjualan::class,'getDetailPenjualan']);
 
 

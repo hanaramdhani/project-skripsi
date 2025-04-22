@@ -66,6 +66,50 @@
                       <tfoot>
                       </tfoot>
                     </table>
+
+
+                    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                      <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Form Edit Barang</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                          <div class="modal-body">
+                            <form class="form-horizontal" id="frm-edit" name="frm-edit" method="POST" action="{{ route('edit.penjualan') }}">
+                              @csrf
+                              <div class="form-group">
+                                <label for="recipient-name" class="col-form-label">Barang</label>
+                                <input type="text" class="form-control" id="dt_barang" readonly>
+                              </div>
+                              <div class="form-group">
+                                <label for="recipient-name" class="col-form-label">Satuan</label>
+                                <input type="text" class="form-control" id="dt_satuan" readonly>
+                              </div>
+                              <div class="form-group">
+                                <label for="recipient-name" class="col-form-label">QTY</label>
+                                <input name="qty" class="form-control" id="dt_qty">
+                              </div>
+                              <div class="form-group">
+                                <label for="recipient-name" class="col-form-label">Diskon</label>
+                                <input name="diskon" type="text" class="form-control" id="dt_diskon">
+                              </div>
+                              <div class="form-group">
+                                <input type="hidden" name="kd_barang" class="form-control" id="dt_kd_barang" readonly>
+                                <input type="hidden" name="kd_satuan" class="form-control" id="dt_kd_satuan" readonly>
+                                <input type="hidden" name="no_transaksi" class="form-control" id="dt_no_transaksi" readonly>
+                              </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                          </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <!-- /.tab-pane -->
                   <div class="tab-pane" id="timeline">
@@ -434,6 +478,21 @@ $(document).on('click', '.removeRow', function() {
                   <td>${item.qty}</td>
                   <td>${item.harga_jual}</td>
                   <td>${item.diskon}</td>
+                  <td>
+                    <button class="btn btn-warning btn-xs edit_detail" 
+                    id="edit_detail" 
+                    data-diskon=${item.diskon} 
+                    data-qty=${item.qty} 
+                    data-transaksi=${noTransaksi} 
+                    data-kd_barang=${item.kd_barang} 
+                    data-barang='${item.barang}' 
+                    data-kd_satuan=${item.kd_satuan} 
+                    data-satuan=${item.satuan} 
+                    type="button" 
+                    data-toggle="modal" 
+                    data-target="#exampleModal">
+                    <i class="bi bi-pencil"></i>Edit</button>
+                  </td>
                 </tr>
               `;
             }).join('');
@@ -447,6 +506,7 @@ $(document).on('click', '.removeRow', function() {
                     <th>Qty</th>
                     <th>Harga Jual</th>
                     <th>Diskon</th>
+                    <th>#</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -464,6 +524,24 @@ $(document).on('click', '.removeRow', function() {
           }
         });
       }
+
+      $('#example2 tbody').on('click', '.edit_detail', function () {
+        let barang = $(this).data('barang');
+        let satuan = $(this).data('satuan');
+        let kd_barang = $(this).data('kd_barang');
+        let kd_satuan = $(this).data('kd_satuan');
+        let no_transaksi = $(this).data('transaksi');
+        let diskon = $(this).data('diskon');
+        let qty = $(this).data('qty');
+
+        $('#dt_barang').val(barang);
+        $('#dt_satuan').val(satuan);
+        $('#dt_kd_barang').val(kd_barang);
+        $('#dt_kd_satuan').val(kd_satuan);
+        $('#dt_no_transaksi').val(no_transaksi);
+        $('#dt_diskon').val(diskon);
+        $('#dt_qty').val(qty);
+      });
     });
 </script>
 

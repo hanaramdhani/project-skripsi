@@ -88,7 +88,7 @@ class controllerPenjualan extends Controller
                     VALUES
                     ('$no_transaksi', '$kd_barang', '$kd_satuan', '1', '$harga_jual', '$qty', '$diskon_dt', '-', '1')");
         }        
-        return $this->viewPenjualan();
+        return redirect()->route('index.penjualan');
     }
 
 
@@ -97,7 +97,9 @@ class controllerPenjualan extends Controller
         $keyword = $request->no_transaksi;
 
         $sql = DB::select("SELECT
+                                m_barang.kd_barang AS kd_barang,
                                 m_barang.nama AS barang,
+                                m_satuan.kd_satuan AS kd_satuan,
                                 m_satuan.nama AS satuan,
                                 harga_jual,
                                 qty,
@@ -108,16 +110,19 @@ class controllerPenjualan extends Controller
                             INNER JOIN m_satuan ON t_penjualan_detail.kd_satuan = m_satuan.kd_satuan
                             WHERE t_penjualan.no_transaksi=?", ["$keyword"]);
         return response()->json(['dataDetail'=>$sql]);
-        // print_r("SELECT
-        //                         m_barang.nama AS barang,
-        //                         m_satuan.nama AS satuan,
-        //                         harga_jual,
-        //                         qty,
-        //                         t_penjualan_detail.diskon AS diskon
-        //                     FROM t_penjualan 
-        //                     INNER JOIN t_penjualan_detail ON t_penjualan.no_transaksi = t_penjualan_detail.no_transaksi
-        //                     INNER JOIN m_barang ON t_penjualan_detail.kd_barang = m_barang.kd_barang
-        //                     INNER JOIN m_satuan ON t_penjualan_detail.kd_satuan = m_satuan.kd_satuan
-        //                     WHERE t_penjualan.no_transaksi='$keyword'");
+    }
+
+    public function editPenjualan(Request $request)
+    {
+        $no_transaksi = $request->no_transaksi;
+        $kd_barang = $request->kd_barang;
+        $kd_satuan = $request->kd_satuan;
+        $qty = $request->qty;
+        $diskon = $request->diskon;
+
+        DB::update("UPDATE t_penjualan_detail 
+                            SET qty=?, diskon=?
+                           WHERE no_transaksi=? AND kd_barang=? AND kd_satuan=?", ["$qty", "$diskon", "$no_transaksi", "$kd_barang", "$kd_satuan"]);
+        return redirect()->route('index.penjualan');
     }
 }
