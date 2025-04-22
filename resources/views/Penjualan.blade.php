@@ -2,7 +2,7 @@
 
 @section('content')
 
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <div class="content-wrapper">
     <!-- Content Header (Page header) -->
     <section class="content-header">
@@ -39,42 +39,32 @@
                 <div class="tab-content">
                   <div class="active tab-pane" id="activity">
                     <table id="example2" class="table table-bordered table-hover">
-                    <thead>
-                    <tr>
-                        <th>NO. TRANSAKSI</th>
-                        <th>TANGGAL</th>
-                        <th>BARANG</th>
-                        <th>SATUAN</th>
-                        <th>HARGA JUAL</th>
-                        <th>QTY</th>
-                        <th>TOTAL</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php 
-                        foreach ($data as $key => $value) {
-                                echo '<tr>';
-                                echo '<td>' . ($value->no_transaksi) . '</td>';
-                                echo '<td>' . ($value->tanggal) . '</td>';
-                                echo '<td>' . ($value->barang) . '</td>';
-                                echo '<td>' . ($value->satuan) . '</td>';
-                                echo '<td>' . ($value->harga_jual) . '</td>';
-                                echo '<td>' . ($value->qty) . '</td>';
-                                echo '<td>' . ($value->total) . '</td>';
-                                echo '</tr>';
-                        }
-                    ?>
-                    </tbody>
-                    <tfoot>
-                    <!-- <tr>
-                        <th>Rendering engine</th>
-                        <th>Browser</th>
-                        <th>Platform(s)</th>
-                        <th>Engine version</th>
-                        <th>CSS grade</th>
-                        <th>CSS grade</th>
-                    </tr> -->
-                    </tfoot>
+                      <thead>
+                      <tr>
+                          <th class="text-center">NO. TRANSAKSI</th>
+                          <th class="text-center">TANGGAL</th>
+                          <th class="text-center">DISKON</th>
+                          <th class="text-center">CUSTOMER</th>
+                          <th class="text-center">#</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                        <?php foreach ($data as $key => $value): ?>
+                          <tr class="data-row" data-notransaksi="<?= $value->no_transaksi ?>">
+                            <td class="text-center"><?= $value->no_transaksi ?></td>
+                            <td class="text-center"><?= $value->tanggal_penjualan ?></td>
+                            <td class="text-center"><?= $value->diskon ?></td>
+                            <td class="text-center"><?= $value->customer ?></td>
+                            <td class="text-center">
+                              <button type="button" class="btn btn-xs btn-primary toggle-child">
+                                <i class="bi bi-eye"></i> Lihat
+                              </button>
+                            </td>
+                          </tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                      <tfoot>
+                      </tfoot>
                     </table>
                   </div>
                   <!-- /.tab-pane -->
@@ -170,73 +160,69 @@
                   </div>
                   <!-- /.tab-pane -->
 
-                  <div class="tab-pane" id="settings">
-                    <form class="form-horizontal" method="POST" action="{{ route('input.penjualan') }}">
+                  <?php
+                        date_default_timezone_set('Asia/Jakarta');
+                        $today = date('d/m/Y');
+                        // print_r($no_transaksi);
+                  ?>
+                  <div class="tab-pane" id="settings">                  
+                    <form class="form-horizontal" id="frm-input" name="frm_input" method="POST" action="{{ route('input.penjualan') }}">
+                    <?php
+                        date_default_timezone_set('Asia/Jakarta');
+                        echo '<h3 class="text-right">'.date('d/m/Y').'</h3>';
+                    ?>
                       @csrf
                       <div class="form-group row">
                         <label for="inputName" class="col-sm-2 col-form-label">Nomor Transaksi</label>
                         <div class="col-sm-10">
-                          <input type="text" name="no_transaksi" id="no_transaksi" class="form-control" value="">
+                        <input class="form-control" type="text" id="no_transaksi" name="no_transaksi" value="{{ old('no_transaksi', $no_transaksi) }}" readonly>
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputEmail" class="col-sm-2 col-form-label">Customer</label>
                         <div class="col-sm-10">
-                          <input type="text" name="kd_customer" id="kd_customer" class="form-control" value="">
+                          <select class="form-control" name="kd_customer" id="customer">
+                            <?php
+                              foreach ($customer as $key => $value) {
+                                echo '<option value="'.$value->kd_customer.'">'.$value->customer.'</option>';
+                              };
+                            ?>
+                          </select>
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputName2" class="col-sm-2 col-form-label">Pegawai</label>
                         <div class="col-sm-10">
-                          <input type="text" name="kd_pegawai" id="kd_pegawai" class="form-control" value="">
-                        </div>
-                      </div>
-                      <div class="form-group row">
-                        <label for="inputExperience" class="col-sm-2 col-form-label">Tanggal</label>
-                        <div class="col-sm-10">
-                          <textarea class="form-control" name="tanggal" id="tanggal" value=""></textarea>
-                        </div>
-                      </div>
-                      <div class="form-group row">
-                        <label for="inputSkills" class="col-sm-2 col-form-label">Diskon</label>
-                        <div class="col-sm-10">
-                          <input type="text" name="diskon" id="diskon" class="form-control" value="">
+                          <input type="text" name="kd_pegawai" id="kd_pegawai" class="form-control" value="" required>
                         </div>
                       </div>
                       <div class="form-group row">
                         <label for="inputSkills" class="col-sm-2 col-form-label">Pilih Barang</label>
                         <div class="col-sm-10">
-                            <select class="form-control" id="productSelect"></select>
+                          <select class="form-control" id="productSelect" required></select>
                         </div>
                       </div>                      
                       <!-- <h4>Pilih Barang <span><select class="form-control" id="productSelect"></select></span></h4>   -->
-                      
                       <table id="productTable" class=" table stripped-table">
-                            <thead>
-                                <tr>
-                                    <th>Barang</th><th>Satuan</th><th>Qty</th><th>Harga</th><th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-
-                            </tbody>
-                      </table>
-
-                      <h3 class="text-right">Total Penjualan <span><input id="totalPenjualan" type="number" width="50%" readonly></span></h3>
-                      <h3 class="text-right">Cash <span><input id="cash" type="number" width="50%"></span></h3>
-                      <h3 class="text-right">Kembalian <span><input id="kembalian" type="number" width="50%" readonly></span></h3>
-
+                        <thead>
+                          <tr>
+                            <th>Barang</th><th>Satuan</th><th>Harga</th><th>Diskon</th><th>Qty</th><th>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          
+                          </tbody>
+                        </table>
+                      <!-- <input type="text" id="tgl_temporary" value="{{ date('d/m/Y') }}"> -->
                       
-                       <button type="submit" class="btn btn-success text-right">Simpan</button>
-                      
-
-                    </form>
-
-                    <!-- <form id="productForm" class="form-group">
+                      <h3 class="text-right">Total <span><input id="totalPenjualan" type="number" style="background-color: #e0e0e0; border: 1px solid #ccc; color: #333;" readonly></span></h3>
+                      <h3 class="text-right">Diskon <span><input type="number" name="masterDiskon" id="masterDiskon" required></span></h3>
+                      <h3 class="text-right">Total Setelah Diskon <span><input id="totalPenjualanSetelahDiskon" type="number" style="background-color: #e0e0e0; border: 1px solid #ccc; color: #333;" readonly></span></h3>
+                      <h3 class="text-right">Cash <span><input id="cash" type="number" width="50%" required></span></h3>
+                      <h3 class="text-right">Kembalian <span><input id="kembalian" type="number" style="background-color: #e0e0e0; border: 1px solid #ccc; color: #333;" readonly></span></h3>
                         
-                        <button type="submit">Submit</button>
-                    </form> -->
-
+                       <button type="submit" class="btn btn-success text-right">Simpan</button>
+                    </form>
 
                   </div>
                   <!-- /.tab-pane -->
@@ -256,7 +242,7 @@
 
   <!-- jQuery -->
   
-  <script src="{{ asset('lte/plugins/jquery/jquery.min.js') }}"></script>
+<script src="{{ asset('lte/plugins/jquery/jquery.min.js') }}"></script>
 <!-- Bootstrap 4 -->
 <script src="{{ asset('lte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <!-- DataTables  & Plugins -->
@@ -278,18 +264,26 @@
 <script src="{{ asset('lte/dist/js/demo.js') }}"></script>
 <!-- Page specific script -->
 
+
+
+
+
+
+<!-- SCRIPT UNTUK INPUT DATA -->
 <script>
+
 let rowCount = 0;
 
 $(document).ready(function () {
-    $('#no_transaksi').val('');
+    // $('#no_transaksi').val('');
     $('#kd_customer').val('');
     $('#kd_pegawai').val('');
-    $('#tanggal').val('');
     $('#diskon').val('');
     $('#cash').val('');
     $('#totalPenjualan').val('');
     $('#kembalian').val('');
+    $('#masterDiskon').val('');
+    $('#totalPenjualanSetelahDiskon').val('');
 
 
     $('#productSelect').select2({
@@ -328,8 +322,9 @@ $(document).ready(function () {
             <tr>
             <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
             <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
-            <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}"></td>
             <td><input class="form-control harga" type="text" name="products[${rowCount}][harga_jual]" value="${data.harga}" data-row="${rowCount}" readonly></td>
+            <td><input class="form-control diskon_dt" id="diskon_dt" value="0" type="number" name="products[${rowCount}][diskon_dt]" data-row="${rowCount}" required></td>
+            <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}" required></td>
             <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
             <td><input type="hidden" name="products[${rowCount}][kd_barang]" value="${data.kd_barang}" readonly></td>
             <td><input type="hidden" name="products[${rowCount}][kd_satuan]" value="${data.kd_satuan}" readonly></td>
@@ -341,20 +336,26 @@ $(document).ready(function () {
     });
 
     // When quantity changes
-    $('#productTable').on('input', '.qty', function () {
+    $('#productTable').on('input', '.qty',  function () {
         let row = $(this).data('row');
 
         // Get quantity and harga for this row
         let qty = parseFloat($(this).val()) || 0;
+        let diskon_dt = parseFloat($(`input.diskon_dt[data-row="${row}"]`).val()) || 0;
         let harga = parseFloat($(`input.harga[data-row="${row}"]`).val()) || 0;
 
         // Calculate total and update the input
         let total = qty * harga;
-        $(`input.total_harga[data-row="${row}"]`).val(total);
+        let total_setelah_diskon = total - (diskon_dt*qty);
+        $(`input.total_harga[data-row="${row}"]`).val(total_setelah_diskon);
 
         // Update grand total
         updateGrandTotal();
     });
+
+    // function totalDt(){
+      
+    // }
 
     // Calculate grand total
     function updateGrandTotal() {
@@ -368,9 +369,16 @@ $(document).ready(function () {
         $('#totalPenjualan').val(grandTotal);
     }
 
+    // hitung master detail
+    $('#masterDiskon').on('change', function() {
+      $('#totalPenjualanSetelahDiskon').val($('#totalPenjualan').val()-$('#masterDiskon').val());
+    })
+
+    
+
     // kembalian
     $('#cash').on('blur', function() {
-        $('#kembalian').val($('#cash').val()-$('#totalPenjualan').val());
+        $('#kembalian').val($('#cash').val()-$('#totalPenjualanSetelahDiskon').val());
     })
 
     // Remove row and update total
@@ -384,17 +392,82 @@ $(document).on('click', '.removeRow', function() {
     $(this).closest('tr').remove();
 });
 
-$('#example2').DataTable({
-      "paging": true,
-      "lengthChange": true,
-      "searching": true,
-      "ordering": false,
-      "info": true,
-      "autoWidth": true,
-      "responsive": true
-    });
-
 </script>
+
+
+<!-- SCRIPT UNTUK TABEL DATA -->
+<script>
+  const table = $('#example2').DataTable({
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    autoWidth: false,
+    responsive: true
+  });
+
+
+    $('#example2 tbody').on('click', '.toggle-child', function () {
+      const tr = $(this).closest('tr');
+      const row = table.row(tr);
+
+      if (row.child.isShown()) {
+        row.child.hide();
+        tr.removeClass('shown');
+        $(this).html('<i class="bi bi-eye"></i> Lihat');
+      } else {
+        const price = 'Test 2';
+        const noTransaksi = tr.data('notransaksi');
+
+        $.ajax({
+          url: '/detail-penjualan', 
+          type: 'GET',
+          data: { no_transaksi: noTransaksi },
+          success: function (response) {
+            // Build a table for multiple detail rows
+            let detailRows = response.dataDetail.map(function (item) {
+              return `
+                <tr>
+                  <td>${item.barang}</td>
+                  <td>${item.satuan}</td>
+                  <td>${item.qty}</td>
+                  <td>${item.harga_jual}</td>
+                  <td>${item.diskon}</td>
+                </tr>
+              `;
+            }).join('');
+
+            const childHtml = `
+              <table cellpadding="5" cellspacing="0" border="1" style="margin-left:1000px;">
+                <thead>
+                  <tr>
+                    <th>Barang</th>
+                    <th>Satuan</th>
+                    <th>Qty</th>
+                    <th>Harga Jual</th>
+                    <th>Diskon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${detailRows}
+                </tbody>
+              </table>
+            `;
+
+            row.child(childHtml).show();
+            tr.addClass('shown');
+            $(this).html('<i class="bi bi-eye-slash"></i> Sembunyi');
+          },
+          error: function () {
+            alert('Gagal mengambil data detail.');
+          }
+        });
+      }
+    });
+</script>
+
+
 
 
 

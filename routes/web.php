@@ -28,5 +28,6 @@ Route::post('/send-message', [viewController::class, 'sendMessage'])->name('send
 Route::get('penjualan', [controllerPenjualan::class,'viewPenjualan']);
 Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
 Route::post('/input-penjualan', [controllerPenjualan::class, 'inputPenjualan'])->name('input.penjualan');
+Route::get('/detail-penjualan', [controllerPenjualan::class,'getDetailPenjualan']);
 
 
