@@ -222,35 +222,55 @@
                 </li>
 
                 <!-- Section Header -->
-                <li class="nav-header">EXAMPLES</li>
+                <li class="nav-header">TRANSAKSI</li>
 
                 <!-- Data with Submenu -->
-                <li class="nav-item {{ request()->is('pages*') ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-book"></i>
-                        <p>
-                            Transaksi
-                            <i class="fas fa-angle-left right"></i>
-                        </p>
-                    </a>
-                    <!-- <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="{{ url('pages') }}" class="nav-link {{ request()->is('pages') ? 'active' : '' }}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Pages</p>
-                            </a>
-                        </li>
-                    </ul> -->
-                    <ul class="nav nav-treeview">
-                        <!-- Pages -->
-                        <li class="nav-item">
-                            <a href="{{ url('penjualan') }}" class="nav-link {{ request()->is('pages') ? 'active' : '' }}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Penjualan</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+                <!-- <li class="nav-item {{ request()->is('penjualan') || request()->is('pages') ? 'menu-open' : '' }}">
+                  <a href="#" class="nav-link {{ request()->is('penjualan') || request()->is('pages') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-book"></i>
+                    <p>
+                      Transaksi
+                      <i class="right fas fa-angle-left"></i>
+                    </p>
+                  </a>
+                  <ul class="nav nav-treeview"> -->
+                    <li class="nav-item">
+                      <a href="{{ url('pages') }}" class="nav-link {{ request()->is('pages') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Pages</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('penjualan') }}" class="nav-link {{ request()->is('penjualan') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Penjualan</p>
+                      </a>
+                    </li>
+                  <!-- </ul>
+                </li> -->
+
+
+                <!-- Section Header -->
+                <li class="nav-header">MASTER</li>
+
+                <!-- Data with Submenu -->
+                <!-- <li class="nav-item {{ request()->is('penjualan') || request()->is('pages') ? 'menu-open' : '' }}">
+                  <a href="#" class="nav-link {{ request()->is('penjualan') || request()->is('pages') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-book"></i>
+                    <p>
+                      Transaksi
+                      <i class="right fas fa-angle-left"></i>
+                    </p>
+                  </a>
+                  <ul class="nav nav-treeview"> -->
+                    <li class="nav-item">
+                      <a href="{{ url('barang') }}" class="nav-link {{ request()->is('barang') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Barang</p>
+                      </a>
+                    </li>
+                  <!-- </ul>
+                </li> -->
             </ul>
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                 <li class="nav-header">LABELS</li>

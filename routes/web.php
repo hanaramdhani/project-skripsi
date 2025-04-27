@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\controllerBarang;
 use App\Http\Controllers\controllerPenjualan;
 use App\Http\Controllers\viewController;
 use Illuminate\Support\Facades\Route;
@@ -25,10 +26,14 @@ Route::post('/send-message', [viewController::class, 'sendMessage'])->name('send
 
 
 // penjualan
-Route::get('penjualan', [controllerPenjualan::class,'viewPenjualan'])->name('index.penjualan');
+Route::get('/penjualan', [controllerPenjualan::class,'viewPenjualan'])->name('index.penjualan');
 Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
 Route::post('/input-penjualan', [controllerPenjualan::class, 'inputPenjualan'])->name('input.penjualan');
 Route::post('/edit-penjualan', [controllerPenjualan::class, 'editPenjualan'])->name('edit.penjualan');
 Route::get('/detail-penjualan', [controllerPenjualan::class,'getDetailPenjualan']);
 
-
+// m_barang
+Route::get('/barang', [controllerBarang::class,'viewMasterBarang'])->name('index.master.barang');
+Route::post('/input-master-barang', [controllerBarang::class, 'inputBarang'])->name('input.master.barang');
+Route::post('/edit-master-barang', [controllerBarang::class, 'editBarang'])->name('edit.master.barang');
+Route::post('/hapus-master-barang', [controllerBarang::class, 'hapusBarang'])->name('hapus.master.barang');
