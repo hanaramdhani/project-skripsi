@@ -235,12 +235,6 @@
                   </a>
                   <ul class="nav nav-treeview"> -->
                     <li class="nav-item">
-                      <a href="{{ url('pages') }}" class="nav-link {{ request()->is('pages') ? 'active' : '' }}">
-                        <i class="far fa-circle nav-icon"></i>
-                        <p>Pages</p>
-                      </a>
-                    </li>
-                    <li class="nav-item">
                       <a href="{{ url('penjualan') }}" class="nav-link {{ request()->is('penjualan') ? 'active' : '' }}">
                         <i class="far fa-circle nav-icon"></i>
                         <p>Penjualan</p>
