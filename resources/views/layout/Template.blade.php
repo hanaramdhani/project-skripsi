@@ -263,6 +263,42 @@
                         <p>Barang</p>
                       </a>
                     </li>
+                    <li class="nav-item">
+                      <a href="{{ url('satuan') }}" class="nav-link {{ request()->is('satuan') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Satuan</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('barang-satuan') }}" class="nav-link {{ request()->is('barang-satuan') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Master Barang Satuan</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('customer') }}" class="nav-link {{ request()->is('customer') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Customer</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('supplier') }}" class="nav-link {{ request()->is('supplier') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Supplier</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('pegawai') }}" class="nav-link {{ request()->is('pegawai') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Pegawai</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('jabatan') }}" class="nav-link {{ request()->is('jabatan') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Jabatan Pegawai</p>
+                      </a>
+                    </li>
                   <!-- </ul>
                 </li> -->
             </ul>

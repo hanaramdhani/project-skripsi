@@ -32,7 +32,7 @@
                 <ul class="nav nav-pills">
                   <li class="nav-item"><a class="nav-link active" href="#activity" data-toggle="tab">Data Penjualan</a></li>
                   <!-- <li class="nav-item"><a class="nav-link" href="#timeline" data-toggle="tab">Pasca Operasi</a></li> -->
-                  <li class="nav-item"><a class="nav-link" href="#settings" data-toggle="tab">Input Data</a></li>
+                  <li class="nav-item"><a class="nav-link" href="#settings" data-toggle="tab"><i class="bi bi-plus"></i>Input Data</a></li>
                 </ul>
               </div><!-- /.card-header -->
               <div class="card-body">
@@ -243,14 +243,14 @@
                       <div class="form-group row">
                         <label for="inputSkills" class="col-sm-2 col-form-label">Pilih Barang</label>
                         <div class="col-sm-10">
-                          <select class="form-control" id="productSelect" required></select>
+                          <select class="form-control form-control-lg" id="productSelect" required></select>
                         </div>
                       </div>                      
                       <!-- <h4>Pilih Barang <span><select class="form-control" id="productSelect"></select></span></h4>   -->
                       <table id="productTable" class=" table stripped-table">
                         <thead>
                           <tr>
-                            <th>Barang</th><th>Satuan</th><th>Harga</th><th>Diskon</th><th>Qty</th><th>Total</th>
+                            <th class="text-center">Barang</th><th class="text-center">Satuan</th><th class="text-center">Harga</th><th class="text-center">Diskon</th><th class="text-center">Qty</th><th class="text-center">Total</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -265,7 +265,7 @@
                       <h3 class="text-right">Cash <span><input id="cash" type="number" width="50%" required></span></h3>
                       <h3 class="text-right">Kembalian <span><input id="kembalian" type="number" style="background-color: #e0e0e0; border: 1px solid #ccc; color: #333;" readonly></span></h3>
                         
-                       <button type="submit" class="btn btn-success text-right">Simpan</button>
+                       <button type="submit" class="btn btn-success text-right"><i class="bi bi-save"></i>Simpan</button>
                     </form>
 
                   </div>
@@ -372,7 +372,7 @@ $(document).ready(function () {
             <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
             <td><input type="hidden" name="products[${rowCount}][kd_barang]" value="${data.kd_barang}" readonly></td>
             <td><input type="hidden" name="products[${rowCount}][kd_satuan]" value="${data.kd_satuan}" readonly></td>
-                <td><button class="btn btn-danger btn-sm removeRow" type="button">Hapus</button></td>
+                <td><button class="btn btn-danger btn-sm removeRow" type="button"><i class="bi bi-trash"></i>Hapus</button></td>
             </tr>`;
 
         $('#productTable tbody').append(html);

@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\controllerBarang;
+use App\Http\Controllers\controllerCustomer;
+use App\Http\Controllers\controllerJabatan;
+use App\Http\Controllers\controllerPegawai;
 use App\Http\Controllers\controllerPenjualan;
+use App\Http\Controllers\controllerSatuan;
+use App\Http\Controllers\controllerSupplier;
 use App\Http\Controllers\viewController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,3 +42,34 @@ Route::get('/barang', [controllerBarang::class,'viewMasterBarang'])->name('index
 Route::post('/input-master-barang', [controllerBarang::class, 'inputBarang'])->name('input.master.barang');
 Route::post('/edit-master-barang', [controllerBarang::class, 'editBarang'])->name('edit.master.barang');
 Route::post('/hapus-master-barang', [controllerBarang::class, 'hapusBarang'])->name('hapus.master.barang');
+
+// m_satuan
+Route::get('/satuan', [controllerSatuan::class,'viewMasterSatuan'])->name('index.master.satuan');
+Route::post('/input-master-satuan', [controllerSatuan::class, 'inputSatuan'])->name('input.master.satuan');
+Route::post('/edit-master-satuan', [controllerSatuan::class, 'editSatuan'])->name('edit.master.satuan');
+Route::post('/hapus-master-satuan', [controllerSatuan::class, 'hapusSatuan'])->name('hapus.master.satuan');
+
+// m_customer
+Route::get('/customer', [controllerCustomer::class,'viewMasterCustomer'])->name('index.master.customer');
+Route::post('/input-master-customer', [controllerCustomer::class, 'inputCustomer'])->name('input.master.customer');
+Route::post('/edit-master-customer', [controllerCustomer::class, 'editCustomer'])->name('edit.master.customer');
+Route::post('/hapus-master-customer', [controllerCustomer::class, 'hapusCustomer'])->name('hapus.master.customer');
+
+// m_supplier
+Route::get('/supplier', [controllerSupplier::class,'viewMasterSupplier'])->name('index.master.supplier');
+Route::post('/input-master-supplier', [controllerSupplier::class, 'inputSupplier'])->name('input.master.supplier');
+Route::post('/edit-master-supplier', [controllerSupplier::class, 'editSupplier'])->name('edit.master.supplier');
+Route::post('/hapus-master-supplier', [controllerSupplier::class, 'hapusSupplier'])->name('hapus.master.supplier');
+
+// m_pegawai
+Route::get('/pegawai', [controllerPegawai::class,'viewMasterPegawai'])->name('index.master.pegawai');
+Route::post('/input-master-pegawai', [controllerPegawai::class, 'inputPegawai'])->name('input.master.pegawai');
+Route::get('/get-jabatan-pegawai', [controllerPegawai::class, 'getJabatanPegawai'])->name('edit.master.pegawai.jabatan');
+Route::post('/edit-master-pegawai', [controllerPegawai::class, 'editPegawai'])->name('edit.master.pegawai');
+Route::post('/hapus-master-pegawai', [controllerPegawai::class, 'hapusPegawai'])->name('hapus.master.pegawai');
+
+// m_jabatan
+Route::get('/jabatan', [controllerJabatan::class,'viewMasterJabatan'])->name('index.master.jabatan');
+Route::post('/input-master-jabatan', [controllerJabatan::class, 'inputJabatan'])->name('input.master.jabatan');
+Route::post('/edit-master-jabatan', [controllerJabatan::class, 'editJabatan'])->name('edit.master.jabatan');
+Route::post('/hapus-master-jabatan', [controllerJabatan::class, 'hapusJabatan'])->name('hapus.master.jabatan');
