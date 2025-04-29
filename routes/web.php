@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\controllerBarang;
+use App\Http\Controllers\controllerBarangSatuan;
 use App\Http\Controllers\controllerCustomer;
 use App\Http\Controllers\controllerJabatan;
 use App\Http\Controllers\controllerPegawai;
@@ -48,6 +49,13 @@ Route::get('/satuan', [controllerSatuan::class,'viewMasterSatuan'])->name('index
 Route::post('/input-master-satuan', [controllerSatuan::class, 'inputSatuan'])->name('input.master.satuan');
 Route::post('/edit-master-satuan', [controllerSatuan::class, 'editSatuan'])->name('edit.master.satuan');
 Route::post('/hapus-master-satuan', [controllerSatuan::class, 'hapusSatuan'])->name('hapus.master.satuan');
+
+// m_barang_satuan
+Route::get('/barang-satuan', [controllerBarangSatuan::class,'viewMasterBarangSatuan'])->name('index.master.barang.satuan');
+Route::post('/input-master-barang-satuan', [controllerBarangSatuan::class, 'inputBarangSatuan'])->name('input.master.barang.satuan');
+Route::get('/get-jabatan-barang-satuan', [controllerBarangSatuan::class, 'getBarangSatuanEdit'])->name('edit.master.barang.satuan.data');
+Route::post('/edit-master-barang-satuan', [controllerBarangSatuan::class, 'editBarangSatuan'])->name('edit.master.barang.satuan');
+Route::post('/hapus-master-barang-satuan', [controllerBarangSatuan::class, 'hapusBarangSatuan'])->name('hapus.master.barang.satuan');
 
 // m_customer
 Route::get('/customer', [controllerCustomer::class,'viewMasterCustomer'])->name('index.master.customer');

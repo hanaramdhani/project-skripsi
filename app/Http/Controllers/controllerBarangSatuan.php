@@ -7,72 +7,77 @@ use Illuminate\Support\Facades\DB;
 
 class controllerBarangSatuan extends Controller
 {
-    public function viewMasterPegawai()
+    public function viewMasterBarangSatuan()
     {
         $data = DB::select("SELECT 
-                                kd_pegawai,
-                                m_pegawai.nama AS pegawai,
-                                m_pegawai.keterangan AS keterangan,
-                                m_pegawai.`status` AS status_pegawai,
-                                m_jabatan.kd_jabatan AS kd_jabatan,
-                                m_jabatan.nama AS jabatan
-                            FROM m_pegawai
-                            INNER JOIN m_jabatan ON m_pegawai.kd_jabatan = m_jabatan.kd_jabatan");
-        $jabatan = DB::select("SELECT 
-                                    kd_jabatan, 
-                                    nama AS jabatan
-                                FROM m_jabatan");
-        $kd_pegawai_temporary = DB::select("SELECT kd_pegawai FROM m_pegawai ORDER BY kd_pegawai DESC  LIMIT 1");
-        $kd_pg = substr($kd_pegawai_temporary[0]->kd_pegawai, -3);
-        $incremented = str_pad((int)$kd_pg + 1, 3, '0', STR_PAD_LEFT);
-        $kd_pegawai = 'PAA' . $incremented;
-
-
-        return view('pegawai', ['data' => $data, 'jabatan' => $jabatan, 'kd_pegawai' => $kd_pegawai]);
+                                m_barang.kd_barang AS kd_barang,
+                                m_barang.nama AS barang,
+                                m_satuan.kd_satuan AS kd_satuan,
+                                m_satuan.nama AS satuan,
+                                m_barang_satuan.harga_jual AS harga_jual,
+                                m_barang_satuan.keterangan AS keterangan,
+                                m_barang_satuan.`status` AS `status`
+                            FROM m_barang_satuan
+                            INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
+                            INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
+                            ORDER BY m_barang.nama");
+        $barang = DB::select("SELECT 
+                                    kd_barang, 
+                                    nama AS barang
+                                FROM m_barang");
+        $satuan = DB::select("SELECT 
+                                    kd_satuan, 
+                                    nama AS satuan
+                                FROM m_satuan");
+        return view('BarangSatuan', ['data' => $data, 'barang' => $barang, 'satuan' => $satuan]);
     }
 
-    public function inputPegawai(Request $request)
+    public function inputBarangSatuan(Request $request)
     {
-        $kd_pegawai = $request->kd_pegawai;
-        $nama = $request->nama;
+        $kd_barang = $request->kd_barang;
+        $kd_satuan = $request->kd_satuan;
+        $harga_jual = $request->harga_jual;
         $keterangan = $request->keterangan;
-        $kd_jabatan = $request->kd_jabatan;
         $status = $request->status;
 
-        DB::insert("INSERT INTO m_pegawai 
-                    (kd_pegawai, nama, keterangan, kd_jabatan, `status`)
-                    VALUES ('$kd_pegawai', '$nama', '$keterangan', '$kd_jabatan', '$status')");
-        return redirect()->route('index.master.pegawai');
+        DB::insert("INSERT INTO m_barang_satuan 
+                    (kd_barang, kd_satuan, harga_jual, keterangan, `status`)
+                    VALUES ('$kd_barang', '$kd_satuan', '$harga_jual', '$keterangan', '$status')");
+        return redirect()->route('index.master.barang.satuan');
     }
 
-    public function getJabatanPegawai()
+    public function getBarangSatuanEdit()
     {
-        $jabatan = DB::select("SELECT 
-                                kd_jabatan, 
+        $barang = DB::select("SELECT 
+                                kd_barang, 
                                 nama 
-                            FROM m_jabatan");
-        return response()->json(['jabatan' => $jabatan]);
+                            FROM m_barang");
+        $satuan = DB::select("SELECT 
+                                kd_satuan, 
+                                nama 
+                            FROM m_satuan");
+        return response()->json(['barang' => $barang, 'satuan' => $satuan]);
     }
 
-    public function editPegawai(Request $request)
+    public function editBarangSatuan(Request $request)
     {
-        $kd_pegawai = $request->edit_kd_pegawai;
-        $nama = $request->edit_nama_pegawai;
-        $keterangan = $request->edit_keterangan_pegawai;
-        $status = $request->edit_status_pegawai;
-        $kd_jabatan = $request->edit_kdJabatan_pegawai;
+        $kd_barang = $request->edit_kd_barang;
+        $kd_satuan = $request->edit_kd_satuan;
+        $harga_jual = $request->edit_harga_jual;
+        $keterangan = $request->edit_keterangan;
+        $status = $request->edit_status;
+        // print_r("UPDATE m_barang_satuan SET harga_jual='$harga_jual', keterangan='$keterangan', `status`='$status' WHERE kd_barang='$kd_barang' AND kd_satuan='$kd_satuan'");
 
-        // print_r($request->edit_kdJabatan_pegawai);
-
-        DB::update("UPDATE m_pegawai SET nama='$nama', keterangan='$keterangan', `status`='$status', kd_jabatan='$kd_jabatan' WHERE kd_pegawai='$kd_pegawai'");
-        return redirect()->route('index.master.pegawai');
+        DB::update("UPDATE m_barang_satuan SET harga_jual='$harga_jual', keterangan='$keterangan', `status`='$status' WHERE kd_barang='$kd_barang' AND kd_satuan='$kd_satuan'");
+        return redirect()->route('index.master.barang.satuan');
     }
 
-    public function hapusPegawai(Request $request)
+    public function hapusBarangSatuan(Request $request)
     {
-        $kd_pegawai = $request->hapus_kd_pegawai;
-        DB::delete("DELETE FROM m_pegawai WHERE kd_pegawai='$kd_pegawai'");
-        return redirect()->route('index.master.pegawai');
+        $kd_barang = $request->hapus_kd_barang;
+        $kd_satuan = $request->hapus_kd_satuan;
+        DB::delete("DELETE FROM m_barang_satuan WHERE kd_barang='$kd_barang' AND kd_satuan='$kd_satuan'");
+        return redirect()->route('index.master.barang.satuan');
     }
 }
 
