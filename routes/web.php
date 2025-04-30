@@ -3,6 +3,7 @@
 use App\Http\Controllers\controllerAkun;
 use App\Http\Controllers\controllerBarang;
 use App\Http\Controllers\controllerBarangSatuan;
+use App\Http\Controllers\controllerBiaya;
 use App\Http\Controllers\controllerCustomer;
 use App\Http\Controllers\controllerJabatan;
 use App\Http\Controllers\controllerPegawai;
@@ -88,3 +89,10 @@ Route::get('/akun', [controllerAkun::class,'viewMasterAkun'])->name('index.maste
 Route::post('/input-master-akun', [controllerAkun::class, 'inputAkun'])->name('input.master.akun');
 Route::post('/edit-master-akun', [controllerAkun::class, 'editAkun'])->name('edit.master.akun');
 Route::post('/hapus-master-akun', [controllerAkun::class, 'hapusAkun'])->name('hapus.master.akun');
+
+// m_biaya
+Route::get('/biaya', [controllerBiaya::class,'viewMasterBiaya'])->name('index.master.biaya');
+Route::post('/input-master-biaya', [controllerBiaya::class, 'inputBiaya'])->name('input.master.biaya');
+Route::get('/get-akun', [controllerBiaya::class, 'editGetAkun'])->name('edit.master.biaya.akun');
+Route::post('/edit-master-biaya', [controllerBiaya::class, 'editBiaya'])->name('edit.master.biaya');
+Route::post('/hapus-master-biaya', [controllerBiaya::class, 'hapusBiaya'])->name('hapus.master.biaya');

@@ -305,6 +305,18 @@
                         <p>Akun</p>
                       </a>
                     </li>
+                    <li class="nav-item">
+                      <a href="{{ url('biaya') }}" class="nav-link {{ request()->is('biaya') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Biaya</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('pendapatan') }}" class="nav-link {{ request()->is('pendapatan') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Pendapatan</p>
+                      </a>
+                    </li>
                   <!-- </ul>
                 </li> -->
             </ul>
