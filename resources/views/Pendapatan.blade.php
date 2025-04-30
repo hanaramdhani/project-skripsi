@@ -9,7 +9,7 @@
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1>DATA MASTER BIAYA</h1>
+            <h1>DATA MASTER PENDAPATAN</h1>
           </div>
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
@@ -30,7 +30,7 @@
             <div class="card">
               <div class="card-header p-2">
                 <ul class="nav nav-pills">
-                  <li class="nav-item"><a class="nav-link active" href="#activity" data-toggle="tab">Data Master Biaya</a></li>
+                  <li class="nav-item"><a class="nav-link active" href="#activity" data-toggle="tab">Data Master Pendapatan</a></li>
                   <li class="nav-item"><a class="nav-link" href="#settings" data-toggle="tab"><i class="bi bi-plus"></i>Input Data</a></li>
                 </ul>
               </div><!-- /.card-header -->
@@ -40,7 +40,7 @@
                     <table id="example2" class="table table-bordered table-hover">
                       <thead>
                       <tr>
-                          <th class="text-center">KODE BIAYA</th>
+                          <th class="text-center">KODE PENDAPATAN</th>
                           <th class="text-center">NAMA</th>
                           <th class="text-center">STATUS</th>
                           <th class="text-center">KETERANGAN</th>
@@ -51,8 +51,8 @@
                       <tbody>
                       <?php foreach ($data as $key => $value): ?>
                           <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_biaya ?></td>
-                            <td class="text-center"><?= $value->biaya ?></td>
+                            <td class="text-center"><?= $value->kd_pendapatan ?></td>
+                            <td class="text-center"><?= $value->pendapatan ?></td>
                             <td class="text-center"><?= $value->status == 1 ? 'Aktif' : 'Tidak Aktif' ?></td>
                             <td class="text-center"><?= $value->keterangan ?></td>
                             <td class="text-center"><?= $value->akun ?></td>
@@ -62,10 +62,10 @@
                                     class="btn btn-xs btn-warning edit-data"
                                     data-toggle="modal" 
                                     data-target="#modalEdit"
-                                    data-kd-biaya="<?= $value->kd_biaya ?>"
-                                    data-nama-biaya="<?= $value->biaya ?>"
-                                    data-status-biaya="<?= $value->status ?>"
-                                    data-keterangan-biaya="<?= $value->keterangan ?>"
+                                    data-kd-pendapatan="<?= $value->kd_pendapatan ?>"
+                                    data-nama-pendapatan="<?= $value->pendapatan ?>"
+                                    data-status-pendapatan="<?= $value->status ?>"
+                                    data-keterangan-pendapatan="<?= $value->keterangan ?>"
                                     data-kd-akun="<?= $value->kd_akun ?>"
                                     data-akun="<?= $value->akun ?>"
                               ><i class="bi bi-pencil"></i>Edit</button>
@@ -75,7 +75,7 @@
                                     class="btn btn-xs btn-danger hapus-data"
                                     data-toggle="modal" 
                                     data-target="#modalHapus"
-                                    data-kd-biaya="<?= $value->kd_biaya ?>"
+                                    data-kd-pendapatan="<?= $value->kd_pendapatan ?>"
                               ><i class="bi bi-trash"></i>Hapus</button>
                               </button>
                             </td>
@@ -97,23 +97,23 @@
                             </button>
                           </div>
                           <div class="modal-body">
-                            <form class="form-horizontal" id="frm-edit" name="frm-edit" method="POST" action="{{ route('edit.master.biaya') }}">
+                            <form class="form-horizontal" id="frm-edit" name="frm-edit" method="POST" action="{{ route('edit.master.pendapatan') }}">
                               @csrf
                               <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Kode Biaya</label>
-                                <input name="edit_kd_biaya" class="form-control" id="edit_kd_biaya" readonly>
+                                <label for="recipient-name" class="col-form-label">Kode Pendapatan</label>
+                                <input name="edit_kd_pendapatan" class="form-control" id="edit_kd_pendapatan" readonly>
                               </div>
                               <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Nama Biaya</label>
-                                <input name="edit_nama_biaya" type="text" class="form-control" id="edit_nama_biaya" required>
+                                <label for="recipient-name" class="col-form-label">Nama Pendapatan</label>
+                                <input name="edit_nama_pendapatan" type="text" class="form-control" id="edit_nama_pendapatan" required>
                               </div>
                               <div class="form-group">
                                 <label for="recipient-name" class="col-form-label">Keterangan</label>
-                                <input name="edit_keterangan_biaya" type="text" class="form-control" id="edit_keterangan_biaya" required>
+                                <input name="edit_keterangan_pendapatan" type="text" class="form-control" id="edit_keterangan_pendapatan" required>
                               </div>
                               <div class="form-group">
                                 <label for="recipient-name" class="col-form-label">Status</label>
-                                <select name="edit_status_biaya" class="form-control" id="edit_status_biaya" required>
+                                <select name="edit_status_pendapatan" class="form-control" id="edit_status_pendapatan" required>
                                     <option value="1">Aktif</option>
                                     <option value="0">Tidak Aktif</option>
                                 </select>
@@ -144,9 +144,9 @@
                           </div>
                           <div class="modal-body">
                             <h4>Apakah anda yakin ingin menghapus item ini ?</h4>
-                            <form class="form-horizontal" id="frm-edit" name="frm-edit" method="POST" action="{{ route('hapus.master.biaya') }}">
+                            <form class="form-horizontal" id="frm-edit" name="frm-edit" method="POST" action="{{ route('hapus.master.pendapatan') }}">
                               @csrf
-                                <input name="hapus_kd_biaya" type="hidden" class="form-control" id="hapus_kd_biaya" readonly>
+                                <input name="hapus_kd_pendapatan" type="hidden" class="form-control" id="hapus_kd_pendapatan" readonly>
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Kembali</button>
@@ -158,20 +158,20 @@
                     </div>
                   </div>
                   <div class="tab-pane" id="settings">                  
-                    <form class="form-horizontal" id="frm-input" name="frm_input" method="POST" action="{{ route('input.master.biaya') }}">
+                    <form class="form-horizontal" id="frm-input" name="frm_input" method="POST" action="{{ route('input.master.pendapatan') }}">
                     <?php
                         date_default_timezone_set('Asia/Jakarta');
                         echo '<div class="col-sm-7"><h3 class="text-right">'.date('d/m/Y').'</h3></div>';
                     ?>
                       @csrf
                       <div class="form-group row">
-                        <label for="inputName2" class="col-sm-2 col-form-label">Kode Biaya</label>
+                        <label for="inputName2" class="col-sm-2 col-form-label">Kode Pendapatan</label>
                         <div class="col-sm-5">
-                          <input type="text" name="kd_biaya" id="kd_biaya" class="form-control" value="{{ old('kd_biaya', $kd_biaya) }}" readonly>
+                          <input type="text" name="kd_pendapatan" id="kd_pendapatan" class="form-control" value="{{ old('kd_pendapatan', $kd_pendapatan) }}" readonly>
                         </div>
                       </div>
                       <div class="form-group row">
-                        <label for="inputName2" class="col-sm-2 col-form-label">Nama Biaya</label>
+                        <label for="inputName2" class="col-sm-2 col-form-label">Nama Pendapatan</label>
                         <div class="col-sm-5">
                           <input type="text" name="nama" id="nama" class="form-control" value="" required>
                         </div>
@@ -263,19 +263,19 @@
 
     
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_biaya = $(this).data('kd-biaya');
-        let nama_biaya = $(this).data('nama-biaya');
-        let status = $(this).data('status-biaya');
-        let keterangan = $(this).data('keterangan-biaya');
+        let kd_pendapatan = $(this).data('kd-pendapatan');
+        let nama_pendapatan = $(this).data('nama-pendapatan');
+        let status = $(this).data('status-pendapatan');
+        let keterangan = $(this).data('keterangan-pendapatan');
         let kd_akun = $(this).data('kd-akun');
-        $('#edit_kd_biaya').val(kd_biaya);
-        $('#edit_nama_biaya').val(nama_biaya);
-        $('#edit_status_biaya').val(status);
-        $('#edit_keterangan_biaya').val(keterangan);
+        $('#edit_kd_pendapatan').val(kd_pendapatan);
+        $('#edit_nama_pendapatan').val(nama_pendapatan);
+        $('#edit_status_pendapatan').val(status);
+        $('#edit_keterangan_pendapatan').val(keterangan);
         $('#edit_kd_akun').val(kd_akun)
 
         $.ajax({
-            url: '/get-akun-biaya',
+            url: '/get-akun-pendapatan',
             type: 'GET',
             success: function (response) {
 
@@ -290,8 +290,8 @@
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_biaya = $(this).data('kd-biaya');
-        $('#hapus_kd_biaya').val(kd_biaya);
+        let kd_pendapatan = $(this).data('kd-pendapatan');
+        $('#hapus_kd_pendapatan').val(kd_pendapatan);
   });
  
 </script>
