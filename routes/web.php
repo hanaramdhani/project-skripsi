@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\controllerAkun;
 use App\Http\Controllers\controllerBarang;
 use App\Http\Controllers\controllerBarangSatuan;
 use App\Http\Controllers\controllerCustomer;
@@ -81,3 +82,9 @@ Route::get('/jabatan', [controllerJabatan::class,'viewMasterJabatan'])->name('in
 Route::post('/input-master-jabatan', [controllerJabatan::class, 'inputJabatan'])->name('input.master.jabatan');
 Route::post('/edit-master-jabatan', [controllerJabatan::class, 'editJabatan'])->name('edit.master.jabatan');
 Route::post('/hapus-master-jabatan', [controllerJabatan::class, 'hapusJabatan'])->name('hapus.master.jabatan');
+
+// m_akun
+Route::get('/akun', [controllerAkun::class,'viewMasterAkun'])->name('index.master.akun');
+Route::post('/input-master-akun', [controllerAkun::class, 'inputAkun'])->name('input.master.akun');
+Route::post('/edit-master-akun', [controllerAkun::class, 'editAkun'])->name('edit.master.akun');
+Route::post('/hapus-master-akun', [controllerAkun::class, 'hapusAkun'])->name('hapus.master.akun');

@@ -299,6 +299,12 @@
                         <p>Jabatan Pegawai</p>
                       </a>
                     </li>
+                    <li class="nav-item">
+                      <a href="{{ url('akun') }}" class="nav-link {{ request()->is('akun') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Akun</p>
+                      </a>
+                    </li>
                   <!-- </ul>
                 </li> -->
             </ul>
