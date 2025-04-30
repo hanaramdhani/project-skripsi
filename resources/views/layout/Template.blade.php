@@ -317,6 +317,18 @@
                         <p>Pendapatan</p>
                       </a>
                     </li>
+                    <li class="nav-item">
+                      <a href="{{ url('kas') }}" class="nav-link {{ request()->is('kas') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Kas</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('divisi') }}" class="nav-link {{ request()->is('divisi') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Divisi</p>
+                      </a>
+                    </li>
                   <!-- </ul>
                 </li> -->
             </ul>

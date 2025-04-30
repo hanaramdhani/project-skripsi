@@ -5,8 +5,11 @@ use App\Http\Controllers\controllerBarang;
 use App\Http\Controllers\controllerBarangSatuan;
 use App\Http\Controllers\controllerBiaya;
 use App\Http\Controllers\controllerCustomer;
+use App\Http\Controllers\controllerDivisi;
 use App\Http\Controllers\controllerJabatan;
+use App\Http\Controllers\controllerKas;
 use App\Http\Controllers\controllerPegawai;
+use App\Http\Controllers\controllerPendapatan;
 use App\Http\Controllers\controllerPenjualan;
 use App\Http\Controllers\controllerSatuan;
 use App\Http\Controllers\controllerSupplier;
@@ -93,6 +96,25 @@ Route::post('/hapus-master-akun', [controllerAkun::class, 'hapusAkun'])->name('h
 // m_biaya
 Route::get('/biaya', [controllerBiaya::class,'viewMasterBiaya'])->name('index.master.biaya');
 Route::post('/input-master-biaya', [controllerBiaya::class, 'inputBiaya'])->name('input.master.biaya');
-Route::get('/get-akun', [controllerBiaya::class, 'editGetAkun'])->name('edit.master.biaya.akun');
+Route::get('/get-akun-biaya', [controllerBiaya::class, 'editGetAkun'])->name('edit.master.biaya.akun');
 Route::post('/edit-master-biaya', [controllerBiaya::class, 'editBiaya'])->name('edit.master.biaya');
 Route::post('/hapus-master-biaya', [controllerBiaya::class, 'hapusBiaya'])->name('hapus.master.biaya');
+
+// m_pendapatan
+Route::get('/pendapatan', [controllerPendapatan::class,'viewMasterPendapatan'])->name('index.master.pendapatan');
+Route::post('/input-master-pendapatan', [controllerPendapatan::class, 'inputPendapatan'])->name('input.master.pendapatan');
+Route::get('/get-akun-pendapatan', [controllerPendapatan::class, 'editGetAkun'])->name('edit.master.pendapatan.akun');
+Route::post('/edit-master-pendapatan', [controllerPendapatan::class, 'editPendapatan'])->name('edit.master.pendapatan');
+Route::post('/hapus-master-pendapatan', [controllerPendapatan::class, 'hapusPendapatan'])->name('hapus.master.pendapatan');
+
+// m_kas
+Route::get('/kas', [controllerKas::class,'viewMasterKas'])->name('index.master.kas');
+Route::post('/input-master-kas', [controllerKas::class, 'inputKas'])->name('input.master.kas');
+Route::post('/edit-master-kas', [controllerKas::class, 'editKas'])->name('edit.master.kas');
+Route::post('/hapus-master-kas', [controllerKas::class, 'hapusKas'])->name('hapus.master.kas');
+
+// m_divisi
+Route::get('/divisi', [controllerDivisi::class,'viewMasterDivisi'])->name('index.master.divisi');
+Route::post('/input-master-divisi', [controllerDivisi::class, 'inputDivisi'])->name('input.master.divisi');
+Route::post('/edit-master-divisi', [controllerDivisi::class, 'editDivisi'])->name('edit.master.divisi');
+Route::post('/hapus-master-divisi', [controllerDivisi::class, 'hapusDivisi'])->name('hapus.master.divisi');
