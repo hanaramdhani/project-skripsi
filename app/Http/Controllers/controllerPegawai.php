@@ -21,7 +21,7 @@ class controllerPegawai extends Controller
         $jabatan = DB::select("SELECT 
                                     kd_jabatan, 
                                     nama AS jabatan
-                                FROM m_jabatan");
+                                FROM m_jabatan WHERE `status` = 1");
         $kd_pegawai_temporary = DB::select("SELECT kd_pegawai FROM m_pegawai ORDER BY kd_pegawai DESC  LIMIT 1");
         $kd_pg = substr($kd_pegawai_temporary[0]->kd_pegawai, -3);
         $incremented = str_pad((int)$kd_pg + 1, 3, '0', STR_PAD_LEFT);
@@ -50,7 +50,7 @@ class controllerPegawai extends Controller
         $jabatan = DB::select("SELECT 
                                 kd_jabatan, 
                                 nama 
-                            FROM m_jabatan");
+                            FROM m_jabatan WHERE `status` = 1");
         return response()->json(['jabatan' => $jabatan]);
     }
 

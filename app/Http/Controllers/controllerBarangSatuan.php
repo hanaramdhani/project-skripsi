@@ -24,11 +24,11 @@ class controllerBarangSatuan extends Controller
         $barang = DB::select("SELECT 
                                     kd_barang, 
                                     nama AS barang
-                                FROM m_barang");
+                                FROM m_barang WHERE `status` = 1");
         $satuan = DB::select("SELECT 
                                     kd_satuan, 
                                     nama AS satuan
-                                FROM m_satuan");
+                                FROM m_satuan WHERE `status` = 1");
         return view('BarangSatuan', ['data' => $data, 'barang' => $barang, 'satuan' => $satuan]);
     }
 
