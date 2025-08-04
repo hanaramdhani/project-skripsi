@@ -14,6 +14,7 @@ use App\Http\Controllers\controllerPenjualan;
 use App\Http\Controllers\controllerSatuan;
 use App\Http\Controllers\controllerSupplier;
 use App\Http\Controllers\viewController;
+use App\Http\Controllers\LaporanController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -118,3 +119,8 @@ Route::get('/divisi', [controllerDivisi::class,'viewMasterDivisi'])->name('index
 Route::post('/input-master-divisi', [controllerDivisi::class, 'inputDivisi'])->name('input.master.divisi');
 Route::post('/edit-master-divisi', [controllerDivisi::class, 'editDivisi'])->name('edit.master.divisi');
 Route::post('/hapus-master-divisi', [controllerDivisi::class, 'hapusDivisi'])->name('hapus.master.divisi');
+
+
+
+// laporan Laba Rugi
+Route::get('/getLabaRugi', [LaporanController::class,'getLaporanLabaRugi','getLaporanLabaRugi']);
