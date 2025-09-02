@@ -10,13 +10,13 @@
 <table class="table table-condensed">
     <tr>
         <th>NO</th>
-        <th>URAIAN</th>
+        <th>TANGGAL</th>
         <th>NOMINAL</th>
     </tr>
     <?php foreach ($data as $key_laba_rugi => $value_laba_rugi): ?>
         <tr>
-            <td><?=$value_laba_rugi->no ?></td>
-            <td><?=$value_laba_rugi->uraian ?></td>
+            <td><?=$key_laba_rugi+1 ?></td>
+            <td><?=$value_laba_rugi->tanggal ?></td>
             <td><?=$value_laba_rugi->nominal ?></td>
         </tr>
     <?php endforeach ?>

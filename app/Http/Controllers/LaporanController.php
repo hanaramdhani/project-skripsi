@@ -16,7 +16,7 @@ class LaporanController extends Controller
     {
         $awal = $req->awal;
         $akhir = $req->akhir;
-        $data = DB::select("CALL GetLabaRugi('2025-04-15','2025-04-15')");
+        $data = DB::select("SELECT * from r_laba_rugi_harian WHERE tanggal BETWEEN '2025-04-03' AND '2025-04-08'");
         // $data = DB::select("CALL GetLabaRugi('$awal','$akhir')");
         // return response()->json(['data' => $data]);
         return view('LaporanLabaRugi', ['data'=>$data]);
