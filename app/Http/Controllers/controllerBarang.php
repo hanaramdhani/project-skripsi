@@ -12,7 +12,7 @@ class controllerBarang extends Controller
         $data = DB::select("SELECT
                                 kd_barang,
                                 nama,
-                                `status`,
+                                status,
                                  CONCAT(DAY(tanggal_daftar), ' ', 
                                     CASE MONTH(tanggal_daftar)
                                         WHEN 1 THEN 'Januari'
@@ -33,7 +33,7 @@ class controllerBarang extends Controller
                                 keterangan
                             FROM m_barang");
         
-        $kd_barang_temporary = DB::select("SELECT kd_barang FROM m_barang ORDER BY kd_barang DESC  LIMIT 1");
+        $kd_barang_temporary = DB::select("SELECT TOP 1 kd_barang FROM m_barang ORDER BY kd_barang DESC");
         $kd_br = substr($kd_barang_temporary[0]->kd_barang, -3);
         $incremented = str_pad((int)$kd_br + 1, 3, '0', STR_PAD_LEFT);
         $kd_barang = 'BAA' . $incremented;
@@ -48,8 +48,8 @@ class controllerBarang extends Controller
         $status = $request->status;
 
         DB::insert("INSERT INTO m_barang 
-                    (kd_barang, nama, keterangan, `status`, tanggal_daftar, date_add)
-                    VALUES ('$kd_barang', '$nama', '$keterangan', '$status', NOW(), NOW())");
+                    (kd_barang, nama, keterangan, status, tanggal_daftar, date_add)
+                    VALUES ('$kd_barang', '$nama', '$keterangan', '$status', GETDATE(), GETDATE())");
         return redirect()->route('index.master.barang');
     }
 
@@ -60,7 +60,7 @@ class controllerBarang extends Controller
         $keterangan = $request->edit_keterangan_barang;
         $status = $request->edit_status_barang;
 
-        DB::update("UPDATE m_barang SET nama='$nama', keterangan='$keterangan', `status`='$status' WHERE kd_barang='$kd_barang'");
+        DB::update("UPDATE m_barang SET nama='$nama', keterangan='$keterangan', status='$status' WHERE kd_barang='$kd_barang'");
         return redirect()->route('index.master.barang');
     }
 
