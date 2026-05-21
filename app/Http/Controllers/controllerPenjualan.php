@@ -8,41 +8,117 @@ use Illuminate\Support\Facades\DB;
 class controllerPenjualan extends Controller
 {
     public function viewPenjualan(){
-        $data = DB::select("SELECT
-                                no_transaksi,
-                                CONCAT(DAY(tanggal), ' ', 
-                                    CASE MONTH(tanggal)
-                                        WHEN 1 THEN 'Januari'
-                                        WHEN 2 THEN 'Februari'
-                                        WHEN 3 THEN 'Maret'
-                                        WHEN 4 THEN 'April'
-                                        WHEN 5 THEN 'Mei'
-                                        WHEN 6 THEN 'Juni'
-                                        WHEN 7 THEN 'Juli'
-                                        WHEN 8 THEN 'Agustus'
-                                        WHEN 9 THEN 'September'
-                                        WHEN 10 THEN 'Oktober'
-                                        WHEN 11 THEN 'November'
-                                        WHEN 12 THEN 'Desember'
-                                    END, 
-                                    ' ', YEAR(tanggal)
-                                ) AS tanggal_penjualan,
-                                diskon,
-                                m_customer.nama AS customer
-                            FROM t_penjualan
-                            INNER JOIN m_customer ON t_penjualan.kd_customer = m_customer.kd_customer
-                            ORDER BY no_transaksi");
-        $customer = DB::select("SELECT 
+        $customer = DB::select("SELECT
                                     kd_customer,
                                     nama AS customer
                                 FROM m_customer
                                 ORDER BY nama");
-        $no_transaksi_temporary = DB::select("SELECT no_transaksi FROM t_penjualan ORDER BY no_transaksi DESC LIMIT 1");
+        $no_transaksi_temporary = DB::select("SELECT top 1 no_transaksi FROM t_penjualan ORDER BY no_transaksi DESC");
         $no_tr = substr($no_transaksi_temporary[0]->no_transaksi, -4);
         $incremented = str_pad((int)$no_tr + 1, 4, '0', STR_PAD_LEFT);
         $no_transaksi = 'PJ' . date('Ymd') . $incremented;
-        
-        return view('Penjualan', ['data' => $data, 'customer' => $customer, 'no_transaksi' => $no_transaksi]);
+
+        // Tanggal penjualan terakhir untuk default filter From/To
+        $last = DB::select("SELECT TOP 1 CONVERT(varchar(10), tanggal, 120) AS tanggal FROM t_penjualan ORDER BY tanggal DESC");
+        $last_sale_date = !empty($last) ? $last[0]->tanggal : date('Y-m-d');
+
+        return view('Penjualan', [
+            'customer' => $customer,
+            'no_transaksi' => $no_transaksi,
+            'last_sale_date' => $last_sale_date,
+        ]);
+    }
+
+    public function getDataPenjualan(Request $request)
+    {
+        $draw     = (int) $request->input('draw', 1);
+        $start    = (int) $request->input('start', 0);
+        $length   = (int) $request->input('length', 10);
+        $search   = $request->input('search.value', '');
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+
+        $orderColumnIndex = (int) $request->input('order.0.column', 0);
+        $orderDir         = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        $columnsMap = [
+            0 => 't_penjualan.no_transaksi',
+            1 => 't_penjualan.tanggal',
+            2 => 't_penjualan.diskon',
+            3 => 'm_customer.nama',
+        ];
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 't_penjualan.tanggal';
+
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        $where = [];
+        $bindings = [];
+
+        if (!empty($dateFrom)) {
+            $where[] = "CAST(t_penjualan.tanggal AS DATE) >= ?";
+            $bindings[] = $dateFrom;
+        }
+        if (!empty($dateTo)) {
+            $where[] = "CAST(t_penjualan.tanggal AS DATE) <= ?";
+            $bindings[] = $dateTo;
+        }
+
+        $bindingsFiltered = $bindings;
+        if (!empty($search)) {
+            $where[] = "(t_penjualan.no_transaksi LIKE ? OR m_customer.nama LIKE ?)";
+            $bindingsFiltered[] = "%$search%";
+            $bindingsFiltered[] = "%$search%";
+        }
+
+        $whereSqlFiltered = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        // Total semua data (tanpa filter sama sekali)
+        $recordsTotal = DB::select("SELECT COUNT(*) AS c FROM t_penjualan")[0]->c;
+
+        // Total setelah filter tanggal + search
+        $recordsFiltered = DB::select("
+            SELECT COUNT(*) AS c
+            FROM t_penjualan
+            INNER JOIN m_customer ON t_penjualan.kd_customer = m_customer.kd_customer
+            $whereSqlFiltered
+        ", $bindingsFiltered)[0]->c;
+
+        // Data halaman
+        $sql = "SELECT
+                    t_penjualan.no_transaksi,
+                    CONCAT(DAY(t_penjualan.tanggal), ' ',
+                        CASE MONTH(t_penjualan.tanggal)
+                            WHEN 1 THEN 'Januari'
+                            WHEN 2 THEN 'Februari'
+                            WHEN 3 THEN 'Maret'
+                            WHEN 4 THEN 'April'
+                            WHEN 5 THEN 'Mei'
+                            WHEN 6 THEN 'Juni'
+                            WHEN 7 THEN 'Juli'
+                            WHEN 8 THEN 'Agustus'
+                            WHEN 9 THEN 'September'
+                            WHEN 10 THEN 'Oktober'
+                            WHEN 11 THEN 'November'
+                            WHEN 12 THEN 'Desember'
+                        END, ' ', YEAR(t_penjualan.tanggal)
+                    ) AS tanggal_penjualan,
+                    t_penjualan.diskon,
+                    m_customer.nama AS customer
+                FROM t_penjualan
+                INNER JOIN m_customer ON t_penjualan.kd_customer = m_customer.kd_customer
+                $whereSqlFiltered
+                ORDER BY $orderColumn $orderDir
+                OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
+
+        $data = DB::select($sql, $bindingsFiltered);
+
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+        ]);
     }
 
     public function getBarangSatuan(Request $request){
@@ -70,24 +146,37 @@ class controllerPenjualan extends Controller
 
 
         DB::insert("INSERT INTO t_penjualan 
-        (no_transaksi, kd_customer, kd_pegawai, kd_divisi, kd_kas, tanggal, diskon, keterangan, `status`)
+        (no_transaksi, kd_customer, kd_divisi,kd_jenis, kd_kas, tanggal, diskon, keterangan, status,kd_voucher,no_bukti,tanggal_jatuh_tempo)
         VALUES
-        ('$no_transaksi', '$kd_customer', '$kd_pegawai', '-', '-', NOW(), '$masterDiskon', '-', 0)
+        ('$no_transaksi', '$kd_customer',1, '-', '-', GETDATE(), '$masterDiskon', '-', 1,'KAA000','-',DATEADD(DAY, 7, GETDATE()))
         ");
 
         $products = $request->products;
+
+        // Ambil harga beli terakhir untuk semua barang yang dipilih sekaligus
+        // lewat table function dbo.getHargaBeliTerakhir('kd1,kd2,...').
+        $kdBarangList = collect($products)->pluck('kd_barang')->filter()->unique()->implode(',');
+        $hargaBeliMap = [];
+        if ($kdBarangList !== '') {
+            $hargaBeliRows = DB::select("SELECT kd_barang, harga_beli FROM dbo.getHargaBeliTerakhir(?)", [$kdBarangList]);
+            foreach ($hargaBeliRows as $row) {
+                $hargaBeliMap[$row->kd_barang] = $row->harga_beli;
+            }
+        }
+
         foreach ($products as $product) {
             $kd_barang = $product['kd_barang'];
             $kd_satuan = $product['kd_satuan'];
             $qty = $product['qty'];
             $diskon_dt = $product['diskon_dt'];
             $harga_jual = $product['harga_jual'];
+            $harga_beli_terakhir = $hargaBeliMap[$kd_barang] ?? 0;
 
-            DB::insert("INSERT INTO t_penjualan_detail 
-                    (no_transaksi, kd_barang, kd_satuan, jenis, harga_jual,qty, diskon, keterangan, `status`)
+            DB::insert("INSERT INTO t_penjualan_detail
+                    (no_transaksi, kd_barang, kd_satuan,kd_pegawai, jenis, harga_jual,qty, diskon, keterangan, harga_beli_terakhir)
                     VALUES
-                    ('$no_transaksi', '$kd_barang', '$kd_satuan', '1', '$harga_jual', '$qty', '$diskon_dt', '-', '1')");
-        }        
+                    ('$no_transaksi', '$kd_barang', '$kd_satuan', '$kd_pegawai', '1', '$harga_jual', '$qty', '$diskon_dt', '-', '$harga_beli_terakhir')");
+        }
         return redirect()->route('index.penjualan');
     }
 

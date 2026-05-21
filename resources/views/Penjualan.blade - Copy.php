@@ -38,23 +38,7 @@
               <div class="card-body">
                 <div class="tab-content">
                   <div class="active tab-pane" id="activity">
-                    <!-- Filter Tanggal From/To -->
-                    <div class="row mb-3">
-                      <div class="col-md-3">
-                        <label for="filter_from" class="mb-1"><strong>Dari Tanggal</strong></label>
-                        <input type="date" class="form-control" id="filter_from" value="{{ $last_sale_date }}">
-                      </div>
-                      <div class="col-md-3">
-                        <label for="filter_to" class="mb-1"><strong>Sampai Tanggal</strong></label>
-                        <input type="date" class="form-control" id="filter_to" value="{{ $last_sale_date }}">
-                      </div>
-                      <div class="col-md-3 d-flex align-items-end">
-                        <button type="button" class="btn btn-primary mr-2" id="btn_filter"><i class="bi bi-funnel"></i> Filter</button>
-                        <button type="button" class="btn btn-secondary" id="btn_reset_filter"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-                      </div>
-                    </div>
-
-                    <table id="example2" class="table table-bordered table-hover" style="width:100%">
+                    <table id="example2" class="table table-bordered table-hover">
                       <thead>
                       <tr>
                           <th class="text-center">NO. TRANSAKSI</th>
@@ -64,7 +48,21 @@
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
-                      <tbody></tbody>
+                      <tbody>
+                        <?php foreach ($data as $key => $value): ?>
+                          <tr class="data-row" data-notransaksi="<?= $value->no_transaksi ?>">
+                            <td class="text-center"><?= $value->no_transaksi ?></td>
+                            <td class="text-center"><?= $value->tanggal_penjualan ?></td>
+                            <td class="text-center"><?= $value->diskon ?></td>
+                            <td class="text-center"><?= $value->customer ?></td>
+                            <td class="text-center">
+                              <button type="button" class="btn btn-xs btn-primary toggle-child">
+                                <i class="bi bi-eye"></i> Lihat
+                              </button>
+                            </td>
+                          </tr>
+                        <?php endforeach; ?>
+                      </tbody>
                       <tfoot>
                       </tfoot>
                     </table>
@@ -211,146 +209,63 @@
                         $today = date('d/m/Y');
                         // print_r($no_transaksi);
                   ?>
-                  <div class="tab-pane" id="settings">
+                  <div class="tab-pane" id="settings">                  
                     <form class="form-horizontal" id="frm-input" name="frm_input" method="POST" action="{{ route('input.penjualan') }}">
+                    <?php
+                        date_default_timezone_set('Asia/Jakarta');
+                        echo '<h3 class="text-right">'.date('d/m/Y').'</h3>';
+                    ?>
                       @csrf
-
-                      <!-- TOP: Tanggal/No.Transaksi/Customer/Pegawai | Pilih Barang | Total -->
-                      <div class="row">
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body">
-                              <div class="form-group row mb-2">
-                                <label class="col-sm-4 col-form-label"><strong>Tanggal</strong></label>
-                                <div class="col-sm-8">
-                                  <input type="text" class="form-control" value="{{ date('d/m/Y') }}" readonly>
-                                </div>
-                              </div>
-                              <div class="form-group row mb-2">
-                                <label class="col-sm-4 col-form-label"><strong>No. Transaksi</strong></label>
-                                <div class="col-sm-8">
-                                  <input class="form-control" type="text" id="no_transaksi" name="no_transaksi" value="{{ old('no_transaksi', $no_transaksi) }}" readonly>
-                                </div>
-                              </div>
-                              <div class="form-group row mb-2">
-                                <label class="col-sm-4 col-form-label"><strong>Customer</strong></label>
-                                <div class="col-sm-8">
-                                  <select class="form-control" name="kd_customer" id="customer">
-                                    <?php
-                                      foreach ($customer as $key => $value) {
-                                        echo '<option value="'.$value->kd_customer.'">'.$value->customer.'</option>';
-                                      };
-                                    ?>
-                                  </select>
-                                </div>
-                              </div>
-                              <div class="form-group row mb-0">
-                                <label class="col-sm-4 col-form-label"><strong>Pegawai</strong></label>
-                                <div class="col-sm-8">
-                                  <input type="text" name="kd_pegawai" id="kd_pegawai" class="form-control" value="" required>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body">
-                              <div class="form-group row mb-0">
-                                <label class="col-sm-3 col-form-label"><strong>Pilih Barang</strong></label>
-                                <div class="col-sm-9">
-                                  <select class="form-control form-control-lg" id="productSelect"></select>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body text-right">
-                              <p class="mb-1" style="font-size:18px;">Total</p>
-                              <h1 class="font-weight-bold mb-0" id="totalDisplay" style="font-size:54px;">0</h1>
-                            </div>
-                          </div>
+                      <div class="form-group row">
+                        <label for="inputName" class="col-sm-2 col-form-label">Nomor Transaksi</label>
+                        <div class="col-sm-10">
+                        <input class="form-control" type="text" id="no_transaksi" name="no_transaksi" value="{{ old('no_transaksi', $no_transaksi) }}" readonly>
                         </div>
                       </div>
-
-                      <!-- PRODUCT TABLE -->
-                      <div class="card card-outline">
-                        <div class="card-body p-2">
-                          <table id="productTable" class="table table-hover mb-0">
-                            <thead>
-                              <tr>
-                                <th class="text-center">Barang</th>
-                                <th class="text-center">Satuan</th>
-                                <th class="text-center">Harga</th>
-                                <th class="text-center">Diskon</th>
-                                <th class="text-center">Qty</th>
-                                <th class="text-center">Total</th>
-                                <th class="text-center" style="width:120px;">#</th>
-                              </tr>
-                            </thead>
-                            <tbody></tbody>
-                          </table>
+                      <div class="form-group row">
+                        <label for="inputEmail" class="col-sm-2 col-form-label">Customer</label>
+                        <div class="col-sm-10">
+                          <select class="form-control" name="kd_customer" id="customer">
+                            <?php
+                              foreach ($customer as $key => $value) {
+                                echo '<option value="'.$value->kd_customer.'">'.$value->customer.'</option>';
+                              };
+                            ?>
+                          </select>
                         </div>
                       </div>
-
-                      <!-- BOTTOM: Total/Diskon/Total Setelah Diskon | Cash/Kembalian | Simpan -->
-                      <div class="row">
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body">
-                              <div class="form-group row mb-2">
-                                <label class="col-sm-5 col-form-label"><strong>Total</strong></label>
-                                <div class="col-sm-7">
-                                  <input id="totalPenjualan" type="number" class="form-control" style="background-color: #e0e0e0;" readonly>
-                                </div>
-                              </div>
-                              <div class="form-group row mb-2">
-                                <label class="col-sm-5 col-form-label"><strong>Diskon</strong></label>
-                                <div class="col-sm-7">
-                                  <input type="number" name="masterDiskon" id="masterDiskon" class="form-control" value="0" required>
-                                </div>
-                              </div>
-                              <div class="form-group row mb-0">
-                                <label class="col-sm-5 col-form-label"><strong>Total Setelah Diskon</strong></label>
-                                <div class="col-sm-7">
-                                  <input id="totalPenjualanSetelahDiskon" type="number" class="form-control" style="background-color: #e0e0e0;" readonly>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body">
-                              <div class="form-group row mb-2">
-                                <label class="col-sm-4 col-form-label"><strong>Cash</strong></label>
-                                <div class="col-sm-8">
-                                  <input id="cash" type="number" class="form-control" required>
-                                </div>
-                              </div>
-                              <div class="form-group row mb-0">
-                                <label class="col-sm-4 col-form-label"><strong>Kembalian</strong></label>
-                                <div class="col-sm-8">
-                                  <input id="kembalian" type="number" class="form-control" style="background-color: #e0e0e0;" readonly>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body d-flex align-items-center justify-content-end" style="height: 100%;">
-                              <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save"></i> Simpan</button>
-                            </div>
-                          </div>
+                      <div class="form-group row">
+                        <label for="inputName2" class="col-sm-2 col-form-label">Pegawai</label>
+                        <div class="col-sm-10">
+                          <input type="text" name="kd_pegawai" id="kd_pegawai" class="form-control" value="" required>
                         </div>
                       </div>
+                      <div class="form-group row">
+                        <label for="inputSkills" class="col-sm-2 col-form-label">Pilih Barang</label>
+                        <div class="col-sm-10">
+                          <select class="form-control form-control-lg" id="productSelect" required></select>
+                        </div>
+                      </div>                      
+                      <!-- <h4>Pilih Barang <span><select class="form-control" id="productSelect"></select></span></h4>   -->
+                      <table id="productTable" class=" table stripped-table">
+                        <thead>
+                          <tr>
+                            <th class="text-center">Barang</th><th class="text-center">Satuan</th><th class="text-center">Harga</th><th class="text-center">Diskon</th><th class="text-center">Qty</th><th class="text-center">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          
+                          </tbody>
+                        </table>
+                      <!-- <input type="text" id="tgl_temporary" value="{{ date('d/m/Y') }}"> -->
+                      
+                      <h3 class="text-right">Total <span><input id="totalPenjualan" type="number" style="background-color: #e0e0e0; border: 1px solid #ccc; color: #333;" readonly></span></h3>
+                      <h3 class="text-right">Diskon <span><input type="number" name="masterDiskon" id="masterDiskon" required></span></h3>
+                      <h3 class="text-right">Total Setelah Diskon <span><input id="totalPenjualanSetelahDiskon" type="number" style="background-color: #e0e0e0; border: 1px solid #ccc; color: #333;" readonly></span></h3>
+                      <h3 class="text-right">Cash <span><input id="cash" type="number" width="50%" required></span></h3>
+                      <h3 class="text-right">Kembalian <span><input id="kembalian" type="number" style="background-color: #e0e0e0; border: 1px solid #ccc; color: #333;" readonly></span></h3>
+                        
+                       <button type="submit" class="btn btn-success text-right"><i class="bi bi-save"></i>Simpan</button>
                     </form>
 
                   </div>
@@ -369,9 +284,11 @@
     <!-- /.content -->
   </div>
 
-@endsection
-
-@section('scripts')
+  <!-- jQuery -->
+  
+<script src="{{ asset('lte/plugins/jquery/jquery.min.js') }}"></script>
+<!-- Bootstrap 4 -->
+<script src="{{ asset('lte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <!-- DataTables  & Plugins -->
 <script src="{{ asset('lte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
@@ -385,6 +302,10 @@
 <script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
+<!-- AdminLTE App -->
+<script src="{{ asset('lte/dist/js/adminlte.min.js') }}"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="{{ asset('lte/dist/js/demo.js') }}"></script>
 <!-- Page specific script -->
 
 
@@ -397,16 +318,15 @@
 
 let rowCount = 0;
 
-function formatRupiah(angka) {
-    return Number(angka || 0).toLocaleString('id-ID');
-}
-
 $(document).ready(function () {
+    // $('#no_transaksi').val('');
     $('#kd_customer').val('');
     $('#kd_pegawai').val('');
+    $('#diskon').val('');
     $('#cash').val('');
     $('#totalPenjualan').val('');
     $('#kembalian').val('');
+    $('#masterDiskon').val('');
     $('#totalPenjualanSetelahDiskon').val('');
 
 
@@ -444,66 +364,76 @@ $(document).ready(function () {
         const data = e.params.data;
         let html = `
             <tr>
-                <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
-                <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
-                <td><input class="form-control harga" type="text" name="products[${rowCount}][harga_jual]" value="${data.harga}" data-row="${rowCount}" readonly></td>
-                <td><input class="form-control diskon_dt" value="0" type="number" name="products[${rowCount}][diskon_dt]" data-row="${rowCount}" required></td>
-                <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}" required></td>
-                <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
-                <td class="text-center">
-                    <input type="hidden" name="products[${rowCount}][kd_barang]" value="${data.kd_barang}">
-                    <input type="hidden" name="products[${rowCount}][kd_satuan]" value="${data.kd_satuan}">
-                    <button class="btn btn-danger btn-sm removeRow" type="button"><i class="bi bi-trash"></i> Hapus</button>
-                </td>
+            <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
+            <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
+            <td><input class="form-control harga" type="text" name="products[${rowCount}][harga_jual]" value="${data.harga}" data-row="${rowCount}" readonly></td>
+            <td><input class="form-control diskon_dt" id="diskon_dt" value="0" type="number" name="products[${rowCount}][diskon_dt]" data-row="${rowCount}" required></td>
+            <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}" required></td>
+            <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
+            <td><input type="hidden" name="products[${rowCount}][kd_barang]" value="${data.kd_barang}" readonly></td>
+            <td><input type="hidden" name="products[${rowCount}][kd_satuan]" value="${data.kd_satuan}" readonly></td>
+                <td><button class="btn btn-danger btn-sm removeRow" type="button"><i class="bi bi-trash"></i>Hapus</button></td>
             </tr>`;
 
         $('#productTable tbody').append(html);
         rowCount++;
     });
 
-    // Recalculate row + grand total when qty or diskon changes
-    $('#productTable').on('input', '.qty, .diskon_dt', function () {
+    // When quantity changes
+    $('#productTable').on('input', '.qty',  function () {
         let row = $(this).data('row');
-        let qty = parseFloat($(`input.qty[data-row="${row}"]`).val()) || 0;
+
+        // Get quantity and harga for this row
+        let qty = parseFloat($(this).val()) || 0;
         let diskon_dt = parseFloat($(`input.diskon_dt[data-row="${row}"]`).val()) || 0;
         let harga = parseFloat($(`input.harga[data-row="${row}"]`).val()) || 0;
-        let total = (qty * harga) - (diskon_dt * qty);
-        $(`input.total_harga[data-row="${row}"]`).val(total);
 
+        // Calculate total and update the input
+        let total = qty * harga;
+        let total_setelah_diskon = total - (diskon_dt*qty);
+        $(`input.total_harga[data-row="${row}"]`).val(total_setelah_diskon);
+
+        // Update grand total
         updateGrandTotal();
     });
+
+    // function totalDt(){
+      
+    // }
 
     // Calculate grand total
     function updateGrandTotal() {
         let grandTotal = 0;
-        $('.total_harga').each(function () {
-            grandTotal += parseFloat($(this).val()) || 0;
-        });
-        $('#totalPenjualan').val(grandTotal);
 
-        let diskon = parseFloat($('#masterDiskon').val()) || 0;
-        let grandAfter = grandTotal - diskon;
-        $('#totalPenjualanSetelahDiskon').val(grandAfter);
-        $('#totalDisplay').text(formatRupiah(grandAfter));
+        $('.total_harga').each(function () {
+            let total = parseFloat($(this).val()) || 0;
+            grandTotal += total;
+        });
+
+        $('#totalPenjualan').val(grandTotal);
     }
 
-    // Master discount
-    $('#masterDiskon').on('input change', function () {
-        updateGrandTotal();
-    });
+    // hitung master detail
+    $('#masterDiskon').on('change', function() {
+      $('#totalPenjualanSetelahDiskon').val($('#totalPenjualan').val()-$('#masterDiskon').val());
+    })
 
-    // Cash -> Kembalian
-    $('#cash').on('blur input', function () {
-        let cash = parseFloat($('#cash').val()) || 0;
-        let grandAfter = parseFloat($('#totalPenjualanSetelahDiskon').val()) || 0;
-        $('#kembalian').val(cash - grandAfter);
-    });
+    
 
-    // Remove row
+    // kembalian
+    $('#cash').on('blur', function() {
+        $('#kembalian').val($('#cash').val()-$('#totalPenjualanSetelahDiskon').val());
+    })
+
+    // Remove row and update total
     $('#productTable').on('click', '.removeRow', function () {
         $(this).closest('tr').remove();
         updateGrandTotal();
     });
+});
+
+$(document).on('click', '.removeRow', function() {
+    $(this).closest('tr').remove();
 });
 
 </script>
@@ -512,55 +442,13 @@ $(document).ready(function () {
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
-    processing: true,
-    serverSide: true,
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: true,
+    ordering: false,
     info: true,
     autoWidth: false,
-    responsive: true,
-    order: [[1, 'desc']],
-    ajax: {
-      url: "{{ route('data.penjualan') }}",
-      type: 'GET',
-      data: function (d) {
-        d.date_from = $('#filter_from').val();
-        d.date_to   = $('#filter_to').val();
-      }
-    },
-    columns: [
-      { data: 'no_transaksi', className: 'text-center' },
-      { data: 'tanggal_penjualan', className: 'text-center' },
-      { data: 'diskon', className: 'text-center' },
-      { data: 'customer', className: 'text-center' },
-      {
-        data: null,
-        orderable: false,
-        searchable: false,
-        className: 'text-center',
-        render: function () {
-          return '<button type="button" class="btn btn-xs btn-primary toggle-child"><i class="bi bi-eye"></i> Lihat</button>';
-        }
-      }
-    ],
-    createdRow: function (row, data) {
-      $(row).addClass('data-row').attr('data-notransaksi', data.no_transaksi);
-    }
-  });
-
-  // Filter tanggal
-  $('#btn_filter').on('click', function () {
-    table.ajax.reload();
-  });
-  $('#btn_reset_filter').on('click', function () {
-    $('#filter_from').val('');
-    $('#filter_to').val('');
-    table.ajax.reload();
-  });
-  $('#filter_from, #filter_to').on('change', function () {
-    table.ajax.reload();
+    responsive: true
   });
 
 

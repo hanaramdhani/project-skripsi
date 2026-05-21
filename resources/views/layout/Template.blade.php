@@ -169,11 +169,29 @@
           <i class="fas fa-expand-arrows-alt"></i>
         </a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" data-widget="control-sidebar" data-controlsidebar-slide="true" href="#" role="button">
-          <i class="fas fa-th-large"></i>
-        </a>
-      </li>
+
+      @php $sessionUser = session('user'); @endphp
+      @if ($sessionUser)
+        <li class="nav-item dropdown">
+          <a class="nav-link" data-toggle="dropdown" href="#">
+            <i class="fas fa-user-circle"></i>
+            <span class="d-none d-md-inline ml-1">{{ $sessionUser['username'] }}</span>
+            <span class="badge badge-info ml-1">{{ strtoupper($sessionUser['role']) }}</span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right">
+            <span class="dropdown-item dropdown-header">
+              {{ $sessionUser['keterangan'] }}
+            </span>
+            <div class="dropdown-divider"></div>
+            <form action="{{ route('logout') }}" method="POST" class="m-0">
+              @csrf
+              <button type="submit" class="dropdown-item">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+              </button>
+            </form>
+          </div>
+        </li>
+      @endif
     </ul>
   </nav>
   <!-- /.navbar -->
@@ -183,18 +201,17 @@
         <!-- Brand Logo -->
         <a href="index3.html" class="brand-link">
         <!-- <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8"> -->
-        <span class="brand-text font-weight-light">RSI TRESNA</span>
+        <span class="brand-text font-weight-light">Point of Sales</span>
         </a>
 
         <!-- Sidebar -->
         <div class="sidebar">
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-            <div class="image">
-            <!-- <img src="dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image"> -->
-            </div>
             <div class="info">
-            <a href="#" class="d-block">ADMIN</a>
+                @php $u = session('user'); @endphp
+                <a href="#" class="d-block">{{ $u['username'] ?? 'GUEST' }}</a>
+                <small class="text-muted">{{ $u ? strtoupper($u['role']) : '' }}</small>
             </div>
         </div>
 
@@ -222,41 +239,58 @@
                 </li>
 
                 <!-- Section Header -->
-                <li class="nav-header">TRANSAKSI</li>
+                <!-- <li class="nav-header">TRANSAKSI</li> -->
 
                 <!-- Data with Submenu -->
-                <!-- <li class="nav-item {{ request()->is('penjualan') || request()->is('pages') ? 'menu-open' : '' }}">
-                  <a href="#" class="nav-link {{ request()->is('penjualan') || request()->is('pages') ? 'active' : '' }}">
+                <li class="nav-item {{ request()->is('penjualan') || request()->is('pembelian') || request()->is('pembayaran-pajak') || request()->is('pages') ? 'menu-open' : '' }}">
+                  <a href="#" class="nav-link {{ request()->is('penjualan') || request()->is('pembelian') || request()->is('pembayaran-pajak') || request()->is('pages') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-book"></i>
                     <p>
                       Transaksi
                       <i class="right fas fa-angle-left"></i>
                     </p>
                   </a>
-                  <ul class="nav nav-treeview"> -->
+                  <ul class="nav nav-treeview">
                     <li class="nav-item">
                       <a href="{{ url('penjualan') }}" class="nav-link {{ request()->is('penjualan') ? 'active' : '' }}">
                         <i class="far fa-circle nav-icon"></i>
                         <p>Penjualan</p>
                       </a>
                     </li>
-                  <!-- </ul>
-                </li> -->
+                    <li class="nav-item">
+                      <a href="{{ url('pembelian') }}" class="nav-link {{ request()->is('pembelian') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Pembelian</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('pembayaran-pajak') }}" class="nav-link {{ request()->is('pembayaran-pajak') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Pembayaran Pajak</p>
+                      </a>
+                    </li>
+                  </ul>
+                </li>
 
 
                 <!-- Section Header -->
                 <li class="nav-header">MASTER</li>
 
+                @php
+                  $masterPages = ['barang','satuan','barang-satuan','customer','supplier','pegawai','jabatan','akun','biaya','pendapatan','kas','divisi','user'];
+                  $isMasterActive = request()->is($masterPages);
+                @endphp
+
                 <!-- Data with Submenu -->
-                <!-- <li class="nav-item {{ request()->is('penjualan') || request()->is('pages') ? 'menu-open' : '' }}">
-                  <a href="#" class="nav-link {{ request()->is('penjualan') || request()->is('pages') ? 'active' : '' }}">
+                <li class="nav-item {{ $isMasterActive ? 'menu-open' : '' }}">
+                  <a href="#" class="nav-link {{ $isMasterActive ? 'active' : '' }}">
                     <i class="nav-icon fas fa-book"></i>
                     <p>
-                      Transaksi
+                      Master
                       <i class="right fas fa-angle-left"></i>
                     </p>
                   </a>
-                  <ul class="nav nav-treeview"> -->
+                  <ul class="nav nav-treeview">
                     <li class="nav-item">
                       <a href="{{ url('barang') }}" class="nav-link {{ request()->is('barang') ? 'active' : '' }}">
                         <i class="far fa-circle nav-icon"></i>
@@ -329,10 +363,62 @@
                         <p>Divisi</p>
                       </a>
                     </li>
-                  <!-- </ul>
-                </li> -->
-            </ul>
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    @if ((int)(session('user.group_level') ?? 99) <= 1)
+                    <li class="nav-item">
+                      <a href="{{ url('user') }}" class="nav-link {{ request()->is('user') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>User</p>
+                      </a>
+                    </li>
+                    @endif
+                  </ul>
+                </li>
+
+                <!-- Section Header -->
+                <li class="nav-header">LAPORAN</li>
+
+                @php
+                  $laporanPages = ['jurnal-umum','laporan-laba-rugi','laporan-neraca','laporan-arus-kas'];
+                  $isLaporanActive = request()->is($laporanPages);
+                @endphp
+
+                <!-- Laporan Keuangan with Submenu -->
+                <li class="nav-item {{ $isLaporanActive ? 'menu-open' : '' }}">
+                  <a href="#" class="nav-link {{ $isLaporanActive ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                    <p>
+                      Laporan Keuangan
+                      <i class="right fas fa-angle-left"></i>
+                    </p>
+                  </a>
+                  <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                      <a href="{{ url('jurnal-umum') }}" class="nav-link {{ request()->is('jurnal-umum') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Jurnal Umum</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('laporan-laba-rugi') }}" class="nav-link {{ request()->is('laporan-laba-rugi') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Laporan Laba Rugi</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('laporan-neraca') }}" class="nav-link {{ request()->is('laporan-neraca') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Laporan Neraca</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('laporan-arus-kas') }}" class="nav-link {{ request()->is('laporan-arus-kas') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Laporan Arus Kas</p>
+                      </a>
+                    </li>
+                  </ul>
+                </li>
+
                 <li class="nav-header">LABELS</li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">
@@ -411,9 +497,6 @@
 <script src="{{ asset('lte/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') }}"></script>
 <!-- AdminLTE App -->
 <script src="{{ asset('lte/dist/js/adminlte.js') }}"></script>
-
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
