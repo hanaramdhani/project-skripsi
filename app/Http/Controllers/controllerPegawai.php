@@ -13,7 +13,7 @@ class controllerPegawai extends Controller
                                 kd_pegawai,
                                 m_pegawai.nama AS pegawai,
                                 m_pegawai.keterangan AS keterangan,
-                                m_pegawai.`status` AS status_pegawai,
+                                m_pegawai.[status] AS status_pegawai,
                                 m_jabatan.kd_jabatan AS kd_jabatan,
                                 m_jabatan.nama AS jabatan
                             FROM m_pegawai
@@ -21,8 +21,8 @@ class controllerPegawai extends Controller
         $jabatan = DB::select("SELECT 
                                     kd_jabatan, 
                                     nama AS jabatan
-                                FROM m_jabatan WHERE `status` = 1");
-        $kd_pegawai_temporary = DB::select("SELECT kd_pegawai FROM m_pegawai ORDER BY kd_pegawai DESC  LIMIT 1");
+                                FROM m_jabatan WHERE [status] = 1");
+        $kd_pegawai_temporary = DB::select("SELECT TOP 1 kd_pegawai FROM m_pegawai ORDER BY kd_pegawai DESC");
         $kd_pg = substr($kd_pegawai_temporary[0]->kd_pegawai, -3);
         $incremented = str_pad((int)$kd_pg + 1, 3, '0', STR_PAD_LEFT);
         $kd_pegawai = 'PAA' . $incremented;
@@ -39,9 +39,9 @@ class controllerPegawai extends Controller
         $kd_jabatan = $request->kd_jabatan;
         $status = $request->status;
 
-        DB::insert("INSERT INTO m_pegawai 
-                    (kd_pegawai, nama, keterangan, kd_jabatan, `status`)
-                    VALUES ('$kd_pegawai', '$nama', '$keterangan', '$kd_jabatan', '$status')");
+        DB::insert("INSERT INTO m_pegawai
+                    (kd_pegawai, nama, keterangan, kd_jabatan, [status])
+                    VALUES (?, ?, ?, ?, ?)", [$kd_pegawai, $nama, $keterangan, $kd_jabatan, $status]);
         return redirect()->route('index.master.pegawai');
     }
 
@@ -50,7 +50,7 @@ class controllerPegawai extends Controller
         $jabatan = DB::select("SELECT 
                                 kd_jabatan, 
                                 nama 
-                            FROM m_jabatan WHERE `status` = 1");
+                            FROM m_jabatan WHERE [status] = 1");
         return response()->json(['jabatan' => $jabatan]);
     }
 
@@ -64,14 +64,14 @@ class controllerPegawai extends Controller
 
         // print_r($request->edit_kdJabatan_pegawai);
 
-        DB::update("UPDATE m_pegawai SET nama='$nama', keterangan='$keterangan', `status`='$status', kd_jabatan='$kd_jabatan' WHERE kd_pegawai='$kd_pegawai'");
+        DB::update("UPDATE m_pegawai SET nama=?, keterangan=?, [status]=?, kd_jabatan=? WHERE kd_pegawai=?", [$nama, $keterangan, $status, $kd_jabatan, $kd_pegawai]);
         return redirect()->route('index.master.pegawai');
     }
 
     public function hapusPegawai(Request $request)
     {
         $kd_pegawai = $request->hapus_kd_pegawai;
-        DB::delete("DELETE FROM m_pegawai WHERE kd_pegawai='$kd_pegawai'");
+        DB::delete("DELETE FROM m_pegawai WHERE kd_pegawai=?", [$kd_pegawai]);
         return redirect()->route('index.master.pegawai');
     }
 }

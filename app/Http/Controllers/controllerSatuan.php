@@ -11,7 +11,7 @@ class controllerSatuan extends Controller
     {
         $data = DB::select("SELECT * FROM m_satuan");
         
-        $kd_satuan_temporary = DB::select("SELECT kd_satuan FROM m_satuan ORDER BY kd_satuan DESC  LIMIT 1");
+        $kd_satuan_temporary = DB::select("SELECT TOP 1 kd_satuan FROM m_satuan ORDER BY kd_satuan DESC");
         $kd_st = substr($kd_satuan_temporary[0]->kd_satuan, -3);
         $incremented = str_pad((int)$kd_st + 1, 3, '0', STR_PAD_LEFT);
         $kd_satuan = 'SAA' . $incremented;
@@ -25,9 +25,9 @@ class controllerSatuan extends Controller
         $keterangan = $request->keterangan;
         $status = $request->status;
 
-        DB::insert("INSERT INTO m_satuan 
-                    (kd_satuan, nama, keterangan, `status`, date_add)
-                    VALUES ('$kd_satuan', '$nama', '$keterangan', '$status', NOW())");
+        DB::insert("INSERT INTO m_satuan
+                    (kd_satuan, nama, keterangan, [status], date_add)
+                    VALUES (?, ?, ?, ?, GETDATE())", [$kd_satuan, $nama, $keterangan, $status]);
         return redirect()->route('index.master.satuan');
     }
 
@@ -38,14 +38,14 @@ class controllerSatuan extends Controller
         $keterangan = $request->edit_keterangan_satuan;
         $status = $request->edit_status_satuan;
 
-        DB::update("UPDATE m_satuan SET nama='$nama', keterangan='$keterangan', `status`='$status' WHERE kd_satuan='$kd_satuan'");
+        DB::update("UPDATE m_satuan SET nama=?, keterangan=?, [status]=? WHERE kd_satuan=?", [$nama, $keterangan, $status, $kd_satuan]);
         return redirect()->route('index.master.satuan');
     }
 
     public function hapusSatuan(Request $request)
     {
         $kd_satuan = $request->hapus_kd_satuan;
-        DB::delete("DELETE FROM m_satuan WHERE kd_satuan='$kd_satuan'");
+        DB::delete("DELETE FROM m_satuan WHERE kd_satuan=?", [$kd_satuan]);
         return redirect()->route('index.master.satuan');
     }
 }

@@ -13,13 +13,13 @@ class controllerPendapatan extends Controller
                                 kd_pendapatan,
                                 m_pendapatan.nama AS pendapatan,
                                 m_pendapatan.keterangan AS keterangan,
-                                m_pendapatan.`status` AS `status`,
+                                m_pendapatan.[status] AS [status],
                                 m_akun.kd_akun,
                                 m_akun.nama AS akun
                             FROM m_pendapatan
                             INNER JOIN m_akun ON m_pendapatan.kd_akun = m_akun.kd_akun");
         
-        $kd_pendapatan_temporary = DB::select("SELECT kd_pendapatan FROM m_pendapatan ORDER BY kd_pendapatan DESC  LIMIT 1");
+        $kd_pendapatan_temporary = DB::select("SELECT TOP 1 kd_pendapatan FROM m_pendapatan ORDER BY kd_pendapatan DESC");
         $kd_ak = substr($kd_pendapatan_temporary[0]->kd_pendapatan, -3);
         $incremented = str_pad((int)$kd_ak + 1, 3, '0', STR_PAD_LEFT);
         $kd_pendapatan = 'PAA' . $incremented;
@@ -27,7 +27,7 @@ class controllerPendapatan extends Controller
         $akun = DB::select("SELECT 
                                 kd_akun, 
                                 nama AS akun
-                            FROM m_akun WHERE `status`=1");
+                            FROM m_akun WHERE [status]=1");
         return view('pendapatan', ['data' => $data, 'kd_pendapatan' => $kd_pendapatan, 'akun' => $akun]);
     }
 
@@ -39,15 +39,15 @@ class controllerPendapatan extends Controller
         $status = $request->status;
         $kd_akun = $request->kd_akun;
 
-        DB::insert("INSERT INTO m_pendapatan 
-                    (kd_pendapatan, kd_akun, nama, keterangan, `status`)
-                    VALUES ('$kd_pendapatan', '$kd_akun', '$nama', '$keterangan', '$status')");
+        DB::insert("INSERT INTO m_pendapatan
+                    (kd_pendapatan, kd_akun, nama, keterangan, [status])
+                    VALUES (?, ?, ?, ?, ?)", [$kd_pendapatan, $kd_akun, $nama, $keterangan, $status]);
         return redirect()->route('index.master.pendapatan');
     }
 
     public function editGetAkun()
     {
-        $akun = DB::select("SELECT kd_akun, nama FROM m_akun WHERE `status` = 1");
+        $akun = DB::select("SELECT kd_akun, nama FROM m_akun WHERE [status] = 1");
         return response()->json(['akun' => $akun]);
     }
 
@@ -59,14 +59,14 @@ class controllerPendapatan extends Controller
         $status = $request->edit_status_pendapatan;
         $kd_akun = $request->edit_kd_akun;
 
-        DB::update("UPDATE m_pendapatan SET kd_akun='$kd_akun', nama='$nama', keterangan='$keterangan', `status`='$status' WHERE kd_pendapatan='$kd_pendapatan'");
+        DB::update("UPDATE m_pendapatan SET kd_akun=?, nama=?, keterangan=?, [status]=? WHERE kd_pendapatan=?", [$kd_akun, $nama, $keterangan, $status, $kd_pendapatan]);
         return redirect()->route('index.master.pendapatan');
     }
 
     public function hapusPendapatan(Request $request)
     {
         $kd_pendapatan = $request->hapus_kd_pendapatan;
-        DB::delete("DELETE FROM m_pendapatan WHERE kd_pendapatan='$kd_pendapatan'");
+        DB::delete("DELETE FROM m_pendapatan WHERE kd_pendapatan=?", [$kd_pendapatan]);
         return redirect()->route('index.master.pendapatan');
     }
 }

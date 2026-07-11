@@ -16,7 +16,7 @@ class controllerBarangSatuan extends Controller
                                 m_satuan.nama AS satuan,
                                 m_barang_satuan.harga_jual AS harga_jual,
                                 m_barang_satuan.keterangan AS keterangan,
-                                m_barang_satuan.`status` AS `status`
+                                m_barang_satuan.[status] AS [status]
                             FROM m_barang_satuan
                             INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
                             INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
@@ -24,11 +24,11 @@ class controllerBarangSatuan extends Controller
         $barang = DB::select("SELECT 
                                     kd_barang, 
                                     nama AS barang
-                                FROM m_barang WHERE `status` = 1");
+                                FROM m_barang WHERE [status] = 1");
         $satuan = DB::select("SELECT 
                                     kd_satuan, 
                                     nama AS satuan
-                                FROM m_satuan WHERE `status` = 1");
+                                FROM m_satuan WHERE [status] = 1");
         return view('BarangSatuan', ['data' => $data, 'barang' => $barang, 'satuan' => $satuan]);
     }
 
@@ -40,9 +40,9 @@ class controllerBarangSatuan extends Controller
         $keterangan = $request->keterangan;
         $status = $request->status;
 
-        DB::insert("INSERT INTO m_barang_satuan 
-                    (kd_barang, kd_satuan, harga_jual, keterangan, `status`)
-                    VALUES ('$kd_barang', '$kd_satuan', '$harga_jual', '$keterangan', '$status')");
+        DB::insert("INSERT INTO m_barang_satuan
+                    (kd_barang, kd_satuan, harga_jual, keterangan, [status])
+                    VALUES (?, ?, ?, ?, ?)", [$kd_barang, $kd_satuan, $harga_jual, $keterangan, $status]);
         return redirect()->route('index.master.barang.satuan');
     }
 
@@ -66,9 +66,9 @@ class controllerBarangSatuan extends Controller
         $harga_jual = $request->edit_harga_jual;
         $keterangan = $request->edit_keterangan;
         $status = $request->edit_status;
-        // print_r("UPDATE m_barang_satuan SET harga_jual='$harga_jual', keterangan='$keterangan', `status`='$status' WHERE kd_barang='$kd_barang' AND kd_satuan='$kd_satuan'");
+        // print_r("UPDATE m_barang_satuan SET harga_jual='$harga_jual', keterangan='$keterangan', [status]='$status' WHERE kd_barang='$kd_barang' AND kd_satuan='$kd_satuan'");
 
-        DB::update("UPDATE m_barang_satuan SET harga_jual='$harga_jual', keterangan='$keterangan', `status`='$status' WHERE kd_barang='$kd_barang' AND kd_satuan='$kd_satuan'");
+        DB::update("UPDATE m_barang_satuan SET harga_jual=?, keterangan=?, [status]=? WHERE kd_barang=? AND kd_satuan=?", [$harga_jual, $keterangan, $status, $kd_barang, $kd_satuan]);
         return redirect()->route('index.master.barang.satuan');
     }
 
@@ -76,7 +76,7 @@ class controllerBarangSatuan extends Controller
     {
         $kd_barang = $request->hapus_kd_barang;
         $kd_satuan = $request->hapus_kd_satuan;
-        DB::delete("DELETE FROM m_barang_satuan WHERE kd_barang='$kd_barang' AND kd_satuan='$kd_satuan'");
+        DB::delete("DELETE FROM m_barang_satuan WHERE kd_barang=? AND kd_satuan=?", [$kd_barang, $kd_satuan]);
         return redirect()->route('index.master.barang.satuan');
     }
 }

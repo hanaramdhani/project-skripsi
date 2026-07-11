@@ -47,9 +47,9 @@ class controllerBarang extends Controller
         $keterangan = $request->keterangan;
         $status = $request->status;
 
-        DB::insert("INSERT INTO m_barang 
+        DB::insert("INSERT INTO m_barang
                     (kd_barang, nama, keterangan, status, tanggal_daftar, date_add)
-                    VALUES ('$kd_barang', '$nama', '$keterangan', '$status', GETDATE(), GETDATE())");
+                    VALUES (?, ?, ?, ?, GETDATE(), GETDATE())", [$kd_barang, $nama, $keterangan, $status]);
         return redirect()->route('index.master.barang');
     }
 
@@ -60,14 +60,14 @@ class controllerBarang extends Controller
         $keterangan = $request->edit_keterangan_barang;
         $status = $request->edit_status_barang;
 
-        DB::update("UPDATE m_barang SET nama='$nama', keterangan='$keterangan', status='$status' WHERE kd_barang='$kd_barang'");
+        DB::update("UPDATE m_barang SET nama=?, keterangan=?, status=? WHERE kd_barang=?", [$nama, $keterangan, $status, $kd_barang]);
         return redirect()->route('index.master.barang');
     }
 
     public function hapusBarang(Request $request)
     {
         $kd_barang = $request->hapus_kd_barang;
-        DB::delete("DELETE FROM m_barang WHERE kd_barang='$kd_barang'");
+        DB::delete("DELETE FROM m_barang WHERE kd_barang=?", [$kd_barang]);
         return redirect()->route('index.master.barang');
     }
 }

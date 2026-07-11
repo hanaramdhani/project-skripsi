@@ -11,7 +11,7 @@ class controllerAkun extends Controller
     {
         $data = DB::select("SELECT * FROM m_akun");
         
-        $kd_akun_temporary = DB::select("SELECT kd_akun FROM m_akun ORDER BY kd_akun DESC  LIMIT 1");
+        $kd_akun_temporary = DB::select("SELECT TOP 1 kd_akun FROM m_akun ORDER BY kd_akun DESC");
         $kd_ak = substr($kd_akun_temporary[0]->kd_akun, -3);
         $incremented = str_pad((int)$kd_ak + 1, 3, '0', STR_PAD_LEFT);
         $kd_akun = 'AAA' . $incremented;
@@ -25,9 +25,9 @@ class controllerAkun extends Controller
         $keterangan = $request->keterangan;
         $status = $request->status;
 
-        DB::insert("INSERT INTO m_akun 
-                    (kd_akun, nama, keterangan, `status`)
-                    VALUES ('$kd_akun', '$nama', '$keterangan', '$status')");
+        DB::insert("INSERT INTO m_akun
+                    (kd_akun, nama, keterangan, [status])
+                    VALUES (?, ?, ?, ?)", [$kd_akun, $nama, $keterangan, $status]);
         return redirect()->route('index.master.akun');
     }
 
@@ -38,14 +38,14 @@ class controllerAkun extends Controller
         $keterangan = $request->edit_keterangan_akun;
         $status = $request->edit_status_akun;
 
-        DB::update("UPDATE m_akun SET nama='$nama', keterangan='$keterangan', `status`='$status' WHERE kd_akun='$kd_akun'");
+        DB::update("UPDATE m_akun SET nama=?, keterangan=?, [status]=? WHERE kd_akun=?", [$nama, $keterangan, $status, $kd_akun]);
         return redirect()->route('index.master.akun');
     }
 
     public function hapusAkun(Request $request)
     {
         $kd_akun = $request->hapus_kd_akun;
-        DB::delete("DELETE FROM m_akun WHERE kd_akun='$kd_akun'");
+        DB::delete("DELETE FROM m_akun WHERE kd_akun=?", [$kd_akun]);
         return redirect()->route('index.master.akun');
     }
 }

@@ -145,11 +145,11 @@ class controllerPenjualan extends Controller
         $masterDiskon = $request->masterDiskon;
 
 
-        DB::insert("INSERT INTO t_penjualan 
+        DB::insert("INSERT INTO t_penjualan
         (no_transaksi, kd_customer, kd_divisi,kd_jenis, kd_kas, tanggal, diskon, keterangan, status,kd_voucher,no_bukti,tanggal_jatuh_tempo)
         VALUES
-        ('$no_transaksi', '$kd_customer',1, '-', '-', GETDATE(), '$masterDiskon', '-', 1,'KAA000','-',DATEADD(DAY, 7, GETDATE()))
-        ");
+        (?, ?, 1, '-', '-', GETDATE(), ?, '-', 1, 'KAA000', '-', DATEADD(DAY, 7, GETDATE()))
+        ", [$no_transaksi, $kd_customer, $masterDiskon]);
 
         $products = $request->products;
 
@@ -175,7 +175,8 @@ class controllerPenjualan extends Controller
             DB::insert("INSERT INTO t_penjualan_detail
                     (no_transaksi, kd_barang, kd_satuan,kd_pegawai, jenis, harga_jual,qty, diskon, keterangan, harga_beli_terakhir)
                     VALUES
-                    ('$no_transaksi', '$kd_barang', '$kd_satuan', '$kd_pegawai', '1', '$harga_jual', '$qty', '$diskon_dt', '-', '$harga_beli_terakhir')");
+                    (?, ?, ?, ?, '1', ?, ?, ?, '-', ?)",
+                    [$no_transaksi, $kd_barang, $kd_satuan, $kd_pegawai, $harga_jual, $qty, $diskon_dt, $harga_beli_terakhir]);
         }
         return redirect()->route('index.penjualan');
     }
