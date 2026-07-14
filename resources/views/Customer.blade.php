@@ -50,37 +50,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_customer ?></td>
-                            <td class="text-center"><?= $value->nama ?></td>
-                            <td class="text-center"><?= $value->alamat ?></td>
-                            <td class="text-center"><?= $value->no_hp ?></td>
-                            <td class="text-center"><?= $value->email ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-customer="<?= $value->kd_customer ?>"
-                                    data-nama-customer="<?= $value->nama ?>"
-                                    data-alamat-customer="<?= $value->alamat ?>"
-                                    data-nohp-customer="<?= $value->no_hp ?>"
-                                    data-email-customer="<?= $value->email ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-customer="<?= $value->kd_customer ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -231,35 +200,55 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
+    processing: true,
+    serverSide: true,
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     autoWidth: false,
-    responsive: true
+    responsive: true,
+    ajax: {
+      url: "{{ route('data.master.customer') }}",
+      type: "GET"
+    },
+    columns: [
+      { data: 'kd_customer', className: 'text-center' },
+      { data: 'nama', className: 'text-center' },
+      { data: 'alamat', className: 'text-center' },
+      { data: 'no_hp', className: 'text-center' },
+      { data: 'email', className: 'text-center' },
+      {
+        data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        }
+      }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_customer = $(this).data('kd-customer');
-        let nama_customer = $(this).data('nama-customer');
-        let alamat = $(this).data('alamat-customer');
-        let nohp = $(this).data('nohp-customer');
-        let email = $(this).data('email-customer');
-        $('#edit_kd_customer').val(kd_customer);
-        $('#edit_nama_customer').val(nama_customer);
-        $('#edit_alamat_customer').val(alamat);
-        $('#edit_nohp_customer').val(nohp);
-        $('#edit_email_customer').val(email);
+        let row = getRowData(this);
+        $('#edit_kd_customer').val(row.kd_customer);
+        $('#edit_nama_customer').val(row.nama);
+        $('#edit_alamat_customer').val(row.alamat);
+        $('#edit_nohp_customer').val(row.no_hp);
+        $('#edit_email_customer').val(row.email);
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_customer = $(this).data('kd-customer');
-        $('#hapus_kd_customer').val(kd_customer);
+        let row = getRowData(this);
+        $('#hapus_kd_customer').val(row.kd_customer);
   });
- 
+
 </script>
 
 

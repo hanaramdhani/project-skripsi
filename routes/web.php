@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DokterController;
+use App\Http\Controllers\RsAdminController;
 use App\Http\Controllers\controllerAkun;
 use App\Http\Controllers\controllerBarang;
 use App\Http\Controllers\controllerBarangSatuan;
@@ -26,6 +28,19 @@ use Illuminate\Support\Facades\Route;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// === Public routes (tanpa proteksi) ===
+Route::get('/home',       [DokterController::class, 'home'])->name('site.home');
+Route::get('/dokter',     [DokterController::class, 'index'])->name('dokter.index');
+Route::get('/fertility',  [DokterController::class, 'fertilityClinic'])->name('site.fertility');
+Route::get('/facilities', [DokterController::class, 'facilities'])->name('site.facilities');
+
+// === RS Back Office (publik dulu, nanti bisa dipasang middleware) ===
+Route::prefix('rs-admin')->name('rsadmin.')->group(function () {
+    Route::get('/dokter',         [RsAdminController::class, 'dokter'])->name('dokter');
+    Route::get('/jadwal-praktik', [RsAdminController::class, 'jadwalPraktik'])->name('jadwal');
+    Route::get('/registrasi',     [RsAdminController::class, 'registrasi'])->name('registrasi');
+});
 
 // === Auth routes (tanpa proteksi) ===
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -62,6 +77,7 @@ Route::middleware('auth.user')->group(function () {
 
     // pembayaran pajak
     Route::get('/pembayaran-pajak', [controllerPembayaranPajak::class,'viewPembayaranPajak'])->name('index.pembayaran.pajak');
+    Route::get('/data-pembayaran-pajak', [controllerPembayaranPajak::class,'getDataPembayaranPajak'])->name('data.pembayaran.pajak.list');
     Route::post('/input-pembayaran-pajak', [controllerPembayaranPajak::class, 'inputPembayaranPajak'])->name('input.pembayaran.pajak');
     Route::post('/edit-pembayaran-pajak', [controllerPembayaranPajak::class, 'editPembayaranPajak'])->name('edit.pembayaran.pajak');
     Route::post('/hapus-pembayaran-pajak', [controllerPembayaranPajak::class, 'hapusPembayaranPajak'])->name('hapus.pembayaran.pajak');
@@ -69,18 +85,21 @@ Route::middleware('auth.user')->group(function () {
 
     // m_barang
     Route::get('/barang', [controllerBarang::class,'viewMasterBarang'])->name('index.master.barang');
+    Route::get('/data-barang', [controllerBarang::class,'getDataBarang'])->name('data.master.barang');
     Route::post('/input-master-barang', [controllerBarang::class, 'inputBarang'])->name('input.master.barang');
     Route::post('/edit-master-barang', [controllerBarang::class, 'editBarang'])->name('edit.master.barang');
     Route::post('/hapus-master-barang', [controllerBarang::class, 'hapusBarang'])->name('hapus.master.barang');
 
     // m_satuan
     Route::get('/satuan', [controllerSatuan::class,'viewMasterSatuan'])->name('index.master.satuan');
+    Route::get('/data-satuan', [controllerSatuan::class,'getDataSatuan'])->name('data.master.satuan');
     Route::post('/input-master-satuan', [controllerSatuan::class, 'inputSatuan'])->name('input.master.satuan');
     Route::post('/edit-master-satuan', [controllerSatuan::class, 'editSatuan'])->name('edit.master.satuan');
     Route::post('/hapus-master-satuan', [controllerSatuan::class, 'hapusSatuan'])->name('hapus.master.satuan');
 
     // m_barang_satuan
     Route::get('/barang-satuan', [controllerBarangSatuan::class,'viewMasterBarangSatuan'])->name('index.master.barang.satuan');
+    Route::get('/data-barang-satuan', [controllerBarangSatuan::class,'getDataBarangSatuan'])->name('data.master.barang.satuan');
     Route::post('/input-master-barang-satuan', [controllerBarangSatuan::class, 'inputBarangSatuan'])->name('input.master.barang.satuan');
     Route::get('/get-jabatan-barang-satuan', [controllerBarangSatuan::class, 'getBarangSatuanEdit'])->name('edit.master.barang.satuan.data');
     Route::post('/edit-master-barang-satuan', [controllerBarangSatuan::class, 'editBarangSatuan'])->name('edit.master.barang.satuan');
@@ -88,18 +107,21 @@ Route::middleware('auth.user')->group(function () {
 
     // m_customer
     Route::get('/customer', [controllerCustomer::class,'viewMasterCustomer'])->name('index.master.customer');
+    Route::get('/data-customer', [controllerCustomer::class,'getDataCustomer'])->name('data.master.customer');
     Route::post('/input-master-customer', [controllerCustomer::class, 'inputCustomer'])->name('input.master.customer');
     Route::post('/edit-master-customer', [controllerCustomer::class, 'editCustomer'])->name('edit.master.customer');
     Route::post('/hapus-master-customer', [controllerCustomer::class, 'hapusCustomer'])->name('hapus.master.customer');
 
     // m_supplier
     Route::get('/supplier', [controllerSupplier::class,'viewMasterSupplier'])->name('index.master.supplier');
+    Route::get('/data-supplier', [controllerSupplier::class,'getDataSupplier'])->name('data.master.supplier');
     Route::post('/input-master-supplier', [controllerSupplier::class, 'inputSupplier'])->name('input.master.supplier');
     Route::post('/edit-master-supplier', [controllerSupplier::class, 'editSupplier'])->name('edit.master.supplier');
     Route::post('/hapus-master-supplier', [controllerSupplier::class, 'hapusSupplier'])->name('hapus.master.supplier');
 
     // m_pegawai
     Route::get('/pegawai', [controllerPegawai::class,'viewMasterPegawai'])->name('index.master.pegawai');
+    Route::get('/data-pegawai', [controllerPegawai::class,'getDataPegawai'])->name('data.master.pegawai');
     Route::post('/input-master-pegawai', [controllerPegawai::class, 'inputPegawai'])->name('input.master.pegawai');
     Route::get('/get-jabatan-pegawai', [controllerPegawai::class, 'getJabatanPegawai'])->name('edit.master.pegawai.jabatan');
     Route::post('/edit-master-pegawai', [controllerPegawai::class, 'editPegawai'])->name('edit.master.pegawai');
@@ -107,18 +129,21 @@ Route::middleware('auth.user')->group(function () {
 
     // m_jabatan
     Route::get('/jabatan', [controllerJabatan::class,'viewMasterJabatan'])->name('index.master.jabatan');
+    Route::get('/data-jabatan', [controllerJabatan::class,'getDataJabatan'])->name('data.master.jabatan');
     Route::post('/input-master-jabatan', [controllerJabatan::class, 'inputJabatan'])->name('input.master.jabatan');
     Route::post('/edit-master-jabatan', [controllerJabatan::class, 'editJabatan'])->name('edit.master.jabatan');
     Route::post('/hapus-master-jabatan', [controllerJabatan::class, 'hapusJabatan'])->name('hapus.master.jabatan');
 
     // m_akun
     Route::get('/akun', [controllerAkun::class,'viewMasterAkun'])->name('index.master.akun');
+    Route::get('/data-akun', [controllerAkun::class,'getDataAkun'])->name('data.master.akun');
     Route::post('/input-master-akun', [controllerAkun::class, 'inputAkun'])->name('input.master.akun');
     Route::post('/edit-master-akun', [controllerAkun::class, 'editAkun'])->name('edit.master.akun');
     Route::post('/hapus-master-akun', [controllerAkun::class, 'hapusAkun'])->name('hapus.master.akun');
 
     // m_biaya
     Route::get('/biaya', [controllerBiaya::class,'viewMasterBiaya'])->name('index.master.biaya');
+    Route::get('/data-biaya', [controllerBiaya::class,'getDataBiaya'])->name('data.master.biaya');
     Route::post('/input-master-biaya', [controllerBiaya::class, 'inputBiaya'])->name('input.master.biaya');
     Route::get('/get-akun-biaya', [controllerBiaya::class, 'editGetAkun'])->name('edit.master.biaya.akun');
     Route::post('/edit-master-biaya', [controllerBiaya::class, 'editBiaya'])->name('edit.master.biaya');
@@ -126,6 +151,7 @@ Route::middleware('auth.user')->group(function () {
 
     // m_pendapatan
     Route::get('/pendapatan', [controllerPendapatan::class,'viewMasterPendapatan'])->name('index.master.pendapatan');
+    Route::get('/data-pendapatan', [controllerPendapatan::class,'getDataPendapatan'])->name('data.master.pendapatan');
     Route::post('/input-master-pendapatan', [controllerPendapatan::class, 'inputPendapatan'])->name('input.master.pendapatan');
     Route::get('/get-akun-pendapatan', [controllerPendapatan::class, 'editGetAkun'])->name('edit.master.pendapatan.akun');
     Route::post('/edit-master-pendapatan', [controllerPendapatan::class, 'editPendapatan'])->name('edit.master.pendapatan');
@@ -133,18 +159,21 @@ Route::middleware('auth.user')->group(function () {
 
     // m_kas
     Route::get('/kas', [controllerKas::class,'viewMasterKas'])->name('index.master.kas');
+    Route::get('/data-kas', [controllerKas::class,'getDataKas'])->name('data.master.kas');
     Route::post('/input-master-kas', [controllerKas::class, 'inputKas'])->name('input.master.kas');
     Route::post('/edit-master-kas', [controllerKas::class, 'editKas'])->name('edit.master.kas');
     Route::post('/hapus-master-kas', [controllerKas::class, 'hapusKas'])->name('hapus.master.kas');
 
     // m_divisi
     Route::get('/divisi', [controllerDivisi::class,'viewMasterDivisi'])->name('index.master.divisi');
+    Route::get('/data-divisi', [controllerDivisi::class,'getDataDivisi'])->name('data.master.divisi');
     Route::post('/input-master-divisi', [controllerDivisi::class, 'inputDivisi'])->name('input.master.divisi');
     Route::post('/edit-master-divisi', [controllerDivisi::class, 'editDivisi'])->name('edit.master.divisi');
     Route::post('/hapus-master-divisi', [controllerDivisi::class, 'hapusDivisi'])->name('hapus.master.divisi');
 
     // m_user
     Route::get('/user', [controllerUser::class,'viewMasterUser'])->name('index.master.user');
+    Route::get('/data-user', [controllerUser::class,'getDataUser'])->name('data.master.user');
     Route::post('/input-master-user', [controllerUser::class, 'inputUser'])->name('input.master.user');
     Route::post('/edit-master-user', [controllerUser::class, 'editUser'])->name('edit.master.user');
     Route::post('/hapus-master-user', [controllerUser::class, 'hapusUser'])->name('hapus.master.user');

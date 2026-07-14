@@ -50,37 +50,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_pegawai ?></td>
-                            <td class="text-center"><?= $value->pegawai ?></td>
-                            <td class="text-center"><?= $value->keterangan ?></td>
-                            <td class="text-center"><?= $value->status_pegawai == 1 ? 'Aktif' : 'Tidak Aktif' ?></td>
-                            <td class="text-center"><?= $value->jabatan ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-pegawai="<?= $value->kd_pegawai ?>"
-                                    data-nama-pegawai="<?= $value->pegawai ?>"
-                                    data-keterangan-pegawai="<?= $value->keterangan ?>"
-                                    data-status-pegawai="<?= $value->status_pegawai ?>"
-                                    data-kd-jabatan-pegawai="<?= $value->kd_jabatan ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-pegawai="<?= $value->kd_pegawai ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -246,30 +215,38 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
-    paging: true,
-    lengthChange: true,
-    searching: true,
-    ordering: false,
-    info: true,
-    autoWidth: false,
-    responsive: true
+    processing: true, serverSide: true, paging: true, lengthChange: true,
+    searching: true, ordering: true, info: true, autoWidth: false, responsive: true,
+    ajax: { url: "{{ route('data.master.pegawai') }}", type: "GET" },
+    columns: [
+      { data: 'kd_pegawai', className: 'text-center' },
+      { data: 'pegawai', className: 'text-center' },
+      { data: 'keterangan', className: 'text-center' },
+      { data: 'status_pegawai', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
+      { data: 'jabatan', className: 'text-center' },
+      { data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        } }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_pegawai = $(this).data('kd-pegawai');
-        let nama_pegawai = $(this).data('nama-pegawai');
-        let keterangan = $(this).data('keterangan-pegawai');
-        let status = $(this).data('status-pegawai');
-        let kd_jabatan = $(this).data('kd-jabatan-pegawai');
-        let jabatan = $(this).data('jabatan-pegawai');
-        $('#edit_kd_pegawai').val(kd_pegawai);
-        $('#edit_nama_pegawai').val(nama_pegawai);
-        $('#edit_keterangan_pegawai').val(keterangan);
-        $('#edit_status_pegawai').val(status);
-        $('#edit_kdJabatan_pegawai').val(kd_jabatan);
+        let row = getRowData(this);
+        let kd_jabatan = row.kd_jabatan;
+        $('#edit_kd_pegawai').val(row.kd_pegawai);
+        $('#edit_nama_pegawai').val(row.pegawai);
+        $('#edit_keterangan_pegawai').val(row.keterangan);
+        $('#edit_status_pegawai').val(row.status_pegawai);
 
+        $('#edit_kdJabatan_pegawai').empty();
         $.ajax({
             url: '/get-jabatan-pegawai',
             type: 'GET',
@@ -283,12 +260,12 @@
                 });
             }
         });
-        
+
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_pegawai = $(this).data('kd-pegawai');
-        $('#hapus_kd_pegawai').val(kd_pegawai);
+        let row = getRowData(this);
+        $('#hapus_kd_pegawai').val(row.kd_pegawai);
   });
  
 </script>

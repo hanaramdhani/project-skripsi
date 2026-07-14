@@ -50,54 +50,15 @@
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
-                      <tbody>
                       <?php
+                        // Dipakai oleh modal Edit & form Input (select Periode).
                         $namaBulanID = [
                             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
                             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
                             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
                         ];
-                        // Tampilkan periode (date YYYY-MM-01) sebagai "Bulan YYYY".
-                        $formatPeriode = function ($p) use ($namaBulanID) {
-                            if (empty($p)) return '-';
-                            $ts = strtotime($p);
-                            if ($ts === false) return e($p);
-                            return $namaBulanID[(int) date('n', $ts)] . ' ' . date('Y', $ts);
-                        };
                       ?>
-                      <?php foreach ($data as $key => $value): ?>
-                          <?php $periodeIso = !empty($value->periode ?? null) ? date('Y-m', strtotime($value->periode)) : ''; ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->tanggal_tampil ?></td>
-                            <td class="text-center"><?= $value->masa_pajak ?></td>
-                            <td class="text-center"><?= $formatPeriode($value->periode ?? null) ?></td>
-                            <td class="text-center"><?= $value->jenis_pajak ?></td>
-                            <td class="text-right"><?= number_format((float) $value->nominal, 2, ',', '.') ?></td>
-                            <td class="text-center"><?= $value->ntpn ?></td>
-                            <td class="text-center">
-                              <button
-                                    type="button"
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal"
-                                    data-target="#modalEdit"
-                                    data-id="<?= $value->id ?>"
-                                    data-tanggal="<?= $value->tanggal_iso ?>"
-                                    data-masa-pajak="<?= $value->masa_pajak ?>"
-                                    data-periode="<?= $periodeIso ?>"
-                                    data-jenis-pajak="<?= e($value->jenis_pajak) ?>"
-                                    data-nominal="<?= $value->nominal ?>"
-                                    data-ntpn="<?= $value->ntpn ?>"
-                              ><i class="bi bi-pencil"></i> Edit</button>
-                              <button
-                                    type="button"
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal"
-                                    data-target="#modalHapus"
-                                    data-id="<?= $value->id ?>"
-                              ><i class="bi bi-trash"></i> Hapus</button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
+                      <tbody>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -309,14 +270,40 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
+    processing: true,
+    serverSide: true,
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     autoWidth: false,
-    responsive: true
+    responsive: true,
+    order: [[0, 'desc']],
+    ajax: { url: "{{ route('data.pembayaran.pajak.list') }}", type: "GET" },
+    columns: [
+      { data: 'tanggal_tampil', className: 'text-center' },
+      { data: 'masa_pajak', className: 'text-center' },
+      { data: 'periode_tampil', className: 'text-center', orderable: false, searchable: false },
+      { data: 'jenis_pajak', className: 'text-center' },
+      { data: 'nominal', className: 'text-right',
+        render: function (d) {
+          return d == null ? '' : Number(d).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } },
+      { data: 'ntpn', className: 'text-center' },
+      { data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i> Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i> Hapus</button>';
+        } }
+    ]
   });
+
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
   // Gabung tahun + bulan jadi format date YYYY-MM-01 untuk dikirim ke backend.
   function buildPeriode(tahunSel, bulanSel) {
@@ -358,15 +345,16 @@
   });
 
   $('#example2 tbody').on('click', '.edit-data', function () {
-        $('#edit_id').val($(this).data('id'));
-        $('#edit_ntpn').val($(this).data('ntpn'));
-        $('#edit_tanggal').val($(this).data('tanggal'));
-        $('#edit_masa_pajak').val($(this).data('masa-pajak'));
-        $('#edit_jenis_pajak').val($(this).data('jenis-pajak'));
-        $('#edit_nominal').val($(this).data('nominal'));
+        let row = getRowData(this);
+        $('#edit_id').val(row.id);
+        $('#edit_ntpn').val(row.ntpn);
+        $('#edit_tanggal').val(row.tanggal_iso);      // YYYY-MM-DD untuk input type=date
+        $('#edit_masa_pajak').val(row.masa_pajak);     // YYYY-MM untuk input type=month
+        $('#edit_jenis_pajak').val(row.jenis_pajak);
+        $('#edit_nominal').val(row.nominal);
 
-        // data-periode berformat YYYY-MM (kosong jika belum ada).
-        const periode = String($(this).data('periode') || '');
+        // periode_iso berformat YYYY-MM (kosong jika belum ada).
+        const periode = String(row.periode_iso || '');
         const parts   = periode.split('-');
         if (parts.length >= 2) {
               $('#edit_periode_tahun').val(parts[0]);
@@ -383,7 +371,8 @@
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        $('#hapus_id').val($(this).data('id'));
+        let row = getRowData(this);
+        $('#hapus_id').val(row.id);
   });
 
 </script>

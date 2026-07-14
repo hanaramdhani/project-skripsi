@@ -60,16 +60,6 @@ class controllerUser extends Controller
         $this->guardAccess();
         $currentLevel = $this->currentLevel();
 
-        // Tampilkan hanya user dengan level lebih rendah (group_level > currentLevel)
-        $data = DB::select("
-            SELECT u.kd_user, u.kd_group, u.username, u.keterangan, u.status,
-                   g.nama AS group_nama, g.group_level
-            FROM m_user u
-            LEFT JOIN m_group g ON u.kd_group = g.kd_group
-            WHERE g.group_level > ?
-            ORDER BY u.kd_user
-        ", [$currentLevel]);
-
         // Dropdown group: hanya group dengan level di bawah currentLevel
         $groups = DB::select("
             SELECT kd_group, nama, group_level
@@ -89,9 +79,69 @@ class controllerUser extends Controller
         $kd_user = 'UAA' . $incremented;
 
         return view('User', [
-            'data'    => $data,
             'groups'  => $groups,
             'kd_user' => $kd_user,
+        ]);
+    }
+
+    public function getDataUser(Request $request)
+    {
+        $this->guardAccess();
+        $currentLevel = $this->currentLevel();
+
+        $draw   = (int) $request->input('draw', 1);
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        $search = $request->input('search.value', '');
+
+        $orderColumnIndex = (int) $request->input('order.0.column', 0);
+        $orderDir = strtolower($request->input('order.0.dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
+        $columnsMap = [
+            0 => 'u.kd_user',
+            1 => 'u.username',
+            2 => 'g.nama',
+            3 => 'u.keterangan',
+            4 => 'u.status',
+        ];
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'u.kd_user';
+        if ($length <= 0) { $length = 10; }
+
+        $from = "FROM m_user u LEFT JOIN m_group g ON u.kd_group = g.kd_group";
+
+        // Access-control filter: only users with a group level below current user's level.
+        $where    = ["g.group_level > ?"];
+        $bindings = [$currentLevel];
+
+        if (!empty($search)) {
+            $where[] = "(u.kd_user LIKE ? OR u.username LIKE ? OR g.nama LIKE ? OR u.keterangan LIKE ?)";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+        }
+        $whereSql = 'WHERE ' . implode(' AND ', $where);
+
+        // recordsTotal reflects the always-applied access filter (no search).
+        $recordsTotal    = DB::select("SELECT COUNT(*) AS c $from WHERE g.group_level > ?", [$currentLevel])[0]->c;
+        $recordsFiltered = DB::select("SELECT COUNT(*) AS c $from $whereSql", $bindings)[0]->c;
+
+        $sql = "SELECT
+                    u.kd_user    AS kd_user,
+                    u.username   AS username,
+                    g.nama       AS group_nama,
+                    u.kd_group   AS kd_group,
+                    u.keterangan AS keterangan,
+                    u.status     AS status
+                $from $whereSql
+                ORDER BY $orderColumn $orderDir
+                OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
+        $data = DB::select($sql, $bindings);
+
+        return response()->json([
+            'draw' => $draw,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
         ]);
     }
 

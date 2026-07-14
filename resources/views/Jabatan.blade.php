@@ -49,35 +49,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_jabatan ?></td>
-                            <td class="text-center"><?= $value->nama ?></td>
-                            <td class="text-center"><?= $value->status == 1 ? 'Aktif' : 'Tidak Aktif' ?></td>
-                            <td class="text-center"><?= $value->keterangan ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-jabatan="<?= $value->kd_jabatan ?>"
-                                    data-nama-jabatan="<?= $value->nama ?>"
-                                    data-status-jabatan="<?= $value->status ?>"
-                                    data-keterangan-jabatan="<?= $value->keterangan ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-jabatan="<?= $value->kd_jabatan ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -224,33 +195,41 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
-    paging: true,
-    lengthChange: true,
-    searching: true,
-    ordering: false,
-    info: true,
-    autoWidth: false,
-    responsive: true
+    processing: true, serverSide: true, paging: true, lengthChange: true,
+    searching: true, ordering: true, info: true, autoWidth: false, responsive: true,
+    ajax: { url: "{{ route('data.master.jabatan') }}", type: "GET" },
+    columns: [
+      { data: 'kd_jabatan', className: 'text-center' },
+      { data: 'nama', className: 'text-center' },
+      { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
+      { data: 'keterangan', className: 'text-center' },
+      { data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        } }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_jabatan = $(this).data('kd-jabatan');
-        let nama_jabatan = $(this).data('nama-jabatan');
-        let status = $(this).data('status-jabatan');
-        let keterangan = $(this).data('keterangan-jabatan');
-        $('#edit_kd_jabatan').val(kd_jabatan);
-        $('#edit_nama_jabatan').val(nama_jabatan);
-        $('#edit_status_jabatan').val(status);
-        $('#edit_keterangan_jabatan').val(keterangan);
+        let row = getRowData(this);
+        $('#edit_kd_jabatan').val(row.kd_jabatan);
+        $('#edit_nama_jabatan').val(row.nama);
+        $('#edit_status_jabatan').val(row.status);
+        $('#edit_keterangan_jabatan').val(row.keterangan);
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_jabatan = $(this).data('kd-jabatan');
-        $('#hapus_kd_jabatan').val(kd_jabatan);
+        let row = getRowData(this);
+        $('#hapus_kd_jabatan').val(row.kd_jabatan);
   });
- 
+
 </script>
 
 

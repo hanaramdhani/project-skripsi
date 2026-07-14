@@ -48,35 +48,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_divisi ?></td>
-                            <td class="text-center"><?= $value->nama ?></td>
-                            <td class="text-center"><?= $value->status == 1 ? 'Aktif' : 'Tidak Aktif' ?></td>
-                            <td class="text-center"><?= $value->keterangan ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-divisi="<?= $value->kd_divisi ?>"
-                                    data-nama-divisi="<?= $value->nama ?>"
-                                    data-status-divisi="<?= $value->status ?>"
-                                    data-keterangan-divisi="<?= $value->keterangan ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-divisi="<?= $value->kd_divisi ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -223,33 +194,41 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
-    paging: true,
-    lengthChange: true,
-    searching: true,
-    ordering: false,
-    info: true,
-    autoWidth: false,
-    responsive: true
+    processing: true, serverSide: true, paging: true, lengthChange: true,
+    searching: true, ordering: true, info: true, autoWidth: false, responsive: true,
+    ajax: { url: "{{ route('data.master.divisi') }}", type: "GET" },
+    columns: [
+      { data: 'kd_divisi', className: 'text-center' },
+      { data: 'nama', className: 'text-center' },
+      { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
+      { data: 'keterangan', className: 'text-center' },
+      { data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        } }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_divisi = $(this).data('kd-divisi');
-        let nama_divisi = $(this).data('nama-divisi');
-        let status = $(this).data('status-divisi');
-        let keterangan = $(this).data('keterangan-divisi');
-        $('#edit_kd_divisi').val(kd_divisi);
-        $('#edit_nama_divisi').val(nama_divisi);
-        $('#edit_status_divisi').val(status);
-        $('#edit_keterangan_divisi').val(keterangan);
+        let row = getRowData(this);
+        $('#edit_kd_divisi').val(row.kd_divisi);
+        $('#edit_nama_divisi').val(row.nama);
+        $('#edit_status_divisi').val(row.status);
+        $('#edit_keterangan_divisi').val(row.keterangan);
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_divisi = $(this).data('kd-divisi');
-        $('#hapus_kd_divisi').val(kd_divisi);
+        let row = getRowData(this);
+        $('#hapus_kd_divisi').val(row.kd_divisi);
   });
- 
+
 </script>
 
 

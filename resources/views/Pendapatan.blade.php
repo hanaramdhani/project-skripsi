@@ -49,38 +49,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_pendapatan ?></td>
-                            <td class="text-center"><?= $value->pendapatan ?></td>
-                            <td class="text-center"><?= $value->status == 1 ? 'Aktif' : 'Tidak Aktif' ?></td>
-                            <td class="text-center"><?= $value->keterangan ?></td>
-                            <td class="text-center"><?= $value->akun ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-pendapatan="<?= $value->kd_pendapatan ?>"
-                                    data-nama-pendapatan="<?= $value->pendapatan ?>"
-                                    data-status-pendapatan="<?= $value->status ?>"
-                                    data-keterangan-pendapatan="<?= $value->keterangan ?>"
-                                    data-kd-akun="<?= $value->kd_akun ?>"
-                                    data-akun="<?= $value->akun ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-pendapatan="<?= $value->kd_pendapatan ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -245,34 +213,42 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
-    paging: true,
-    lengthChange: true,
-    searching: true,
-    ordering: false,
-    info: true,
-    autoWidth: false,
-    responsive: true
+    processing: true, serverSide: true, paging: true, lengthChange: true,
+    searching: true, ordering: true, info: true, autoWidth: false, responsive: true,
+    ajax: { url: "{{ route('data.master.pendapatan') }}", type: "GET" },
+    columns: [
+      { data: 'kd_pendapatan', className: 'text-center' },
+      { data: 'pendapatan', className: 'text-center' },
+      { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
+      { data: 'keterangan', className: 'text-center' },
+      { data: 'akun', className: 'text-center' },
+      { data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        } }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_pendapatan = $(this).data('kd-pendapatan');
-        let nama_pendapatan = $(this).data('nama-pendapatan');
-        let status = $(this).data('status-pendapatan');
-        let keterangan = $(this).data('keterangan-pendapatan');
-        let kd_akun = $(this).data('kd-akun');
-        $('#edit_kd_pendapatan').val(kd_pendapatan);
-        $('#edit_nama_pendapatan').val(nama_pendapatan);
-        $('#edit_status_pendapatan').val(status);
-        $('#edit_keterangan_pendapatan').val(keterangan);
-        $('#edit_kd_akun').val(kd_akun)
+        let row = getRowData(this);
+        let kd_akun = row.kd_akun;
+        $('#edit_kd_pendapatan').val(row.kd_pendapatan);
+        $('#edit_nama_pendapatan').val(row.pendapatan);
+        $('#edit_status_pendapatan').val(row.status);
+        $('#edit_keterangan_pendapatan').val(row.keterangan);
 
+        $('#edit_kd_akun').empty();
         $.ajax({
             url: '/get-akun-pendapatan',
             type: 'GET',
             success: function (response) {
-
                 response.akun.forEach(function (item) {
                     let selected = item.kd_akun == kd_akun ? 'selected' : '';
                     $('#edit_kd_akun').append(
@@ -284,8 +260,8 @@
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_pendapatan = $(this).data('kd-pendapatan');
-        $('#hapus_kd_pendapatan').val(kd_pendapatan);
+        let row = getRowData(this);
+        $('#hapus_kd_pendapatan').val(row.kd_pendapatan);
   });
  
 </script>

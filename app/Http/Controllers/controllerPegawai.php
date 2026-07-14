@@ -9,15 +9,6 @@ class controllerPegawai extends Controller
 {
     public function viewMasterPegawai()
     {
-        $data = DB::select("SELECT 
-                                kd_pegawai,
-                                m_pegawai.nama AS pegawai,
-                                m_pegawai.keterangan AS keterangan,
-                                m_pegawai.[status] AS status_pegawai,
-                                m_jabatan.kd_jabatan AS kd_jabatan,
-                                m_jabatan.nama AS jabatan
-                            FROM m_pegawai
-                            INNER JOIN m_jabatan ON m_pegawai.kd_jabatan = m_jabatan.kd_jabatan");
         $jabatan = DB::select("SELECT 
                                     kd_jabatan, 
                                     nama AS jabatan
@@ -28,7 +19,65 @@ class controllerPegawai extends Controller
         $kd_pegawai = 'PAA' . $incremented;
 
 
-        return view('pegawai', ['data' => $data, 'jabatan' => $jabatan, 'kd_pegawai' => $kd_pegawai]);
+        return view('pegawai', ['jabatan' => $jabatan, 'kd_pegawai' => $kd_pegawai]);
+    }
+
+    public function getDataPegawai(Request $request)
+    {
+        $draw   = (int) $request->input('draw', 1);
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        $search = $request->input('search.value', '');
+
+        $orderColumnIndex = (int) $request->input('order.0.column', 0);
+        $orderDir = strtolower($request->input('order.0.dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
+
+        // indices must match the visible data columns IN ORDER (exclude action col);
+        // qualify with table name to avoid ambiguity across the join:
+        $columnsMap = [
+            0 => 'm_pegawai.kd_pegawai',
+            1 => 'm_pegawai.nama',
+            2 => 'm_pegawai.keterangan',
+            3 => 'm_pegawai.[status]',
+            4 => 'm_jabatan.nama',
+        ];
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'm_pegawai.kd_pegawai';
+
+        if ($length <= 0) { $length = 10; }
+
+        // Build the JOIN once so counts + data stay consistent
+        $from = "FROM m_pegawai INNER JOIN m_jabatan ON m_pegawai.kd_jabatan = m_jabatan.kd_jabatan";
+
+        $where = [];
+        $bindings = [];
+        if (!empty($search)) {
+            $where[] = "(m_pegawai.kd_pegawai LIKE ? OR m_pegawai.nama LIKE ? OR m_pegawai.keterangan LIKE ? OR m_jabatan.nama LIKE ?)";
+            $bindings[] = "%$search%"; $bindings[] = "%$search%"; $bindings[] = "%$search%"; $bindings[] = "%$search%";
+        }
+        $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        // recordsTotal = COUNT of the base table only (no join needed, no where)
+        $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM m_pegawai")[0]->c;
+        // recordsFiltered = COUNT with the join + where
+        $recordsFiltered = DB::select("SELECT COUNT(*) AS c $from $whereSql", $bindings)[0]->c;
+
+        $sql = "SELECT
+                    m_pegawai.kd_pegawai AS kd_pegawai,
+                    m_pegawai.nama AS pegawai,
+                    m_pegawai.keterangan AS keterangan,
+                    m_pegawai.[status] AS status_pegawai,
+                    m_pegawai.kd_jabatan AS kd_jabatan,
+                    m_jabatan.nama AS jabatan
+                $from
+                $whereSql
+                ORDER BY $orderColumn $orderDir
+                OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
+        $data = DB::select($sql, $bindings);
+
+        return response()->json([
+            'draw' => $draw, 'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered, 'data' => $data,
+        ]);
     }
 
     public function inputPegawai(Request $request)

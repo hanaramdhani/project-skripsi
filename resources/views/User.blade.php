@@ -56,40 +56,7 @@
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
-                      <tbody>
-                      @foreach ($data as $value)
-                        <tr class="data-row">
-                          <td class="text-center">{{ $value->kd_user }}</td>
-                          <td class="text-center">{{ $value->username }}</td>
-                          <td class="text-center">{{ $value->group_nama ?? $value->kd_group }}</td>
-                          <td class="text-center">{{ $value->keterangan }}</td>
-                          <td class="text-center">
-                            @if ($value->status == 1)
-                              <span class="badge badge-success">Aktif</span>
-                            @else
-                              <span class="badge badge-secondary">Tidak Aktif</span>
-                            @endif
-                          </td>
-                          <td class="text-center">
-                            <button type="button" class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" data-target="#modalEdit"
-                                    data-kd-user="{{ $value->kd_user }}"
-                                    data-username="{{ $value->username }}"
-                                    data-kd-group="{{ $value->kd_group }}"
-                                    data-keterangan="{{ $value->keterangan }}"
-                                    data-status="{{ $value->status }}">
-                              <i class="bi bi-pencil"></i> Edit
-                            </button>
-                            <button type="button" class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" data-target="#modalHapus"
-                                    data-kd-user="{{ $value->kd_user }}"
-                                    data-username="{{ $value->username }}">
-                              <i class="bi bi-trash"></i> Hapus
-                            </button>
-                          </td>
-                        </tr>
-                      @endforeach
-                      </tbody>
+                      <tbody></tbody>
                     </table>
 
                     <!-- Modal Edit -->
@@ -244,28 +211,51 @@
 <script src="{{ asset('lte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 <script>
-  $('#example2').DataTable({
+  const table = $('#example2').DataTable({
+    processing: true,
+    serverSide: true,
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     autoWidth: false,
-    responsive: true
+    responsive: true,
+    ajax: { url: "{{ route('data.master.user') }}", type: "GET" },
+    columns: [
+      { data: 'kd_user', className: 'text-center' },
+      { data: 'username', className: 'text-center' },
+      { data: 'group_nama', className: 'text-center' },
+      { data: 'keterangan', className: 'text-center' },
+      { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
+      { data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i> Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i> Hapus</button>';
+        } }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
+
   $('#example2 tbody').on('click', '.edit-data', function () {
-    $('#edit_kd_user').val($(this).data('kd-user'));
-    $('#edit_username').val($(this).data('username'));
-    $('#edit_kd_group').val($(this).data('kd-group'));
-    $('#edit_keterangan').val($(this).data('keterangan'));
-    $('#edit_status').val($(this).data('status'));
+    let row = getRowData(this);
+    $('#edit_kd_user').val(row.kd_user);
+    $('#edit_username').val(row.username);
+    $('#edit_kd_group').val(row.kd_group);
+    $('#edit_keterangan').val(row.keterangan);
+    $('#edit_status').val(row.status);
     $('#edit_password').val('');
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-    $('#hapus_kd_user').val($(this).data('kd-user'));
-    $('#hapus_username').text($(this).data('username'));
+    let row = getRowData(this);
+    $('#hapus_kd_user').val(row.kd_user);
+    $('#hapus_username').text(row.username);
   });
 </script>
 @endsection

@@ -49,40 +49,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->barang ?></td>
-                            <td class="text-center"><?= $value->satuan ?></td>
-                            <td class="text-center"><?= $value->harga_jual ?></td>
-                            <td class="text-center"><?= $value->keterangan ?></td>
-                            <td class="text-center"><?= $value->status == 1 ? 'Aktif' : 'Tidak Aktif' ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-barang="<?= $value->kd_barang ?>"
-                                    data-barang="<?= $value->barang ?>"
-                                    data-kd-satuan="<?= $value->kd_satuan ?>"
-                                    data-satuan="<?= $value->satuan ?>"
-                                    data-harga-jual="<?= $value->harga_jual ?>"
-                                    data-keterangan="<?= $value->keterangan ?>"
-                                    data-status="<?= $value->status ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-barang="<?= $value->kd_barang ?>"
-                                    data-kd-satuan="<?= $value->kd_satuan ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -255,41 +221,57 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
+    processing: true,
+    serverSide: true,
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     autoWidth: false,
-    responsive: true
+    responsive: true,
+    ajax: { url: "{{ route('data.master.barang.satuan') }}", type: "GET" },
+    columns: [
+      { data: 'barang', className: 'text-center' },
+      { data: 'satuan', className: 'text-center' },
+      { data: 'harga_jual', className: 'text-center',
+        render: function (d) {
+          if (d === null || d === '') { return d; }
+          return Number(d).toLocaleString('id-ID');
+        } },
+      { data: 'keterangan', className: 'text-center' },
+      { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
+      { data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        } }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_barang = $(this).data('kd-barang');
-        let barang = $(this).data('barang');
-        let kd_satuan = $(this).data('kd-satuan');
-        let satuan = $(this).data('satuan');
-        let harga_jual = $(this).data('harga-jual');
-        let keterangan = $(this).data('keterangan');
-        let status = $(this).data('status');
-        $('#edit_kd_barang').val(kd_barang);
-        $('#edit_barang').val(barang);
-        $('#edit_kd_satuan').val(kd_satuan);
-        $('#edit_satuan').val(satuan);
-        $('#edit_harga_jual').val(harga_jual);
-        $('#edit_keterangan').val(keterangan);
-        $('#edit_status').val(status);        
+        let row = getRowData(this);
+        $('#edit_kd_barang').val(row.kd_barang);
+        $('#edit_barang').val(row.barang);
+        $('#edit_kd_satuan').val(row.kd_satuan);
+        $('#edit_satuan').val(row.satuan);
+        $('#edit_harga_jual').val(row.harga_jual);
+        $('#edit_keterangan').val(row.keterangan);
+        $('#edit_status').val(row.status);
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_barang = $(this).data('kd-barang');
-        let kd_satuan = $(this).data('kd-satuan');
-        $('#hapus_kd_barang').val(kd_barang);
-        $('#hapus_kd_satuan').val(kd_satuan);
+        let row = getRowData(this);
+        $('#hapus_kd_barang').val(row.kd_barang);
+        $('#hapus_kd_satuan').val(row.kd_satuan);
   });
- 
+
 </script>
 
 

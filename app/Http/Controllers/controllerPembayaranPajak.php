@@ -34,20 +34,81 @@ class controllerPembayaranPajak extends Controller
 
     public function viewPembayaranPajak()
     {
-        $data = DB::select("SELECT
-                                id,
-                                CONVERT(varchar(10), tanggal, 23)  AS tanggal_iso,
-                                CONVERT(varchar(10), tanggal, 105) AS tanggal_tampil,
-                                masa_pajak,
-                                jenis_pajak,
-                                nominal,
-                                ntpn
-                            FROM t_pembayaran_pajak
-                            ORDER BY id DESC");
-
         $ntpn = $this->generateNtpn();
 
-        return view('PembayaranPajak', ['data' => $data, 'ntpn' => $ntpn]);
+        return view('PembayaranPajak', ['ntpn' => $ntpn]);
+    }
+
+    /**
+     * Server-side DataTables endpoint untuk tabel Pembayaran Pajak.
+     *
+     * Catatan: kolom "periode" TIDAK ada di tabel t_pembayaran_pajak
+     * (lihat database/sql/create_t_pembayaran_pajak.sql). Sesuai perilaku
+     * viewPembayaranPajak yang lama, kolom PERIODE selalu tampil "-" dan
+     * input periode pada modal edit dibiarkan kosong (periode_iso = '').
+     */
+    public function getDataPembayaranPajak(Request $request)
+    {
+        $draw   = (int) $request->input('draw', 1);
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        $search = $request->input('search.value', '');
+
+        $orderColumnIndex = (int) $request->input('order.0.column', 0);
+        $orderDir = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+
+        // Whitelist ORDER BY. Index 2 (PERIODE) & 6 (aksi) tidak dapat diurutkan
+        // (tidak ada kolom fisik) -> fallback ke id.
+        $columnsMap = [
+            0 => 'tanggal',
+            1 => 'masa_pajak',
+            3 => 'jenis_pajak',
+            4 => 'nominal',
+            5 => 'ntpn',
+        ];
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'id';
+        if ($length <= 0) { $length = 10; }
+
+        $where = [];
+        $bindings = [];
+        if (!empty($search)) {
+            $where[] = "(masa_pajak LIKE ? OR jenis_pajak LIKE ? OR ntpn LIKE ?)";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+        }
+        $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM t_pembayaran_pajak")[0]->c;
+        $recordsFiltered = DB::select("SELECT COUNT(*) AS c FROM t_pembayaran_pajak $whereSql", $bindings)[0]->c;
+
+        $sql = "SELECT
+                    id,
+                    CONVERT(varchar(10), tanggal, 23)  AS tanggal_iso,     -- YYYY-MM-DD (input date modal edit)
+                    CONVERT(varchar(10), tanggal, 105) AS tanggal_tampil,  -- DD-MM-YYYY (kolom tampil)
+                    masa_pajak,                                            -- YYYY-MM (dipakai tampil & input month edit)
+                    jenis_pajak,
+                    nominal,
+                    ntpn
+                FROM t_pembayaran_pajak
+                $whereSql
+                ORDER BY $orderColumn $orderDir
+                OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
+        $data = DB::select($sql, $bindings);
+
+        // Kolom PERIODE tidak ada di tabel -> tampil "-" dan periode_iso kosong,
+        // meniru persis perilaku viewPembayaranPajak yang lama.
+        foreach ($data as $row) {
+            $row->periode_tampil = '-';
+            $row->periode_iso    = '';
+        }
+
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+        ]);
     }
 
     public function inputPembayaranPajak(Request $request)

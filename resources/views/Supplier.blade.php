@@ -50,37 +50,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_supplier ?></td>
-                            <td class="text-center"><?= $value->nama ?></td>
-                            <td class="text-center"><?= $value->alamat ?></td>
-                            <td class="text-center"><?= $value->no_hp ?></td>
-                            <td class="text-center"><?= $value->email ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-supplier="<?= $value->kd_supplier ?>"
-                                    data-nama-supplier="<?= $value->nama ?>"
-                                    data-alamat-supplier="<?= $value->alamat ?>"
-                                    data-nohp-supplier="<?= $value->no_hp ?>"
-                                    data-email-supplier="<?= $value->email ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-supplier="<?= $value->kd_supplier ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -231,35 +200,52 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
+    processing: true,
+    serverSide: true,
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     autoWidth: false,
-    responsive: true
+    responsive: true,
+    ajax: { url: "{{ route('data.master.supplier') }}", type: "GET" },
+    columns: [
+      { data: 'kd_supplier', className: 'text-center' },
+      { data: 'nama', className: 'text-center' },
+      { data: 'alamat', className: 'text-center' },
+      { data: 'no_hp', className: 'text-center' },
+      { data: 'email', className: 'text-center' },
+      {
+        data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        }
+      }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_supplier = $(this).data('kd-supplier');
-        let nama_supplier = $(this).data('nama-supplier');
-        let alamat = $(this).data('alamat-supplier');
-        let nohp = $(this).data('nohp-supplier');
-        let email = $(this).data('email-supplier');
-        $('#edit_kd_supplier').val(kd_supplier);
-        $('#edit_nama_supplier').val(nama_supplier);
-        $('#edit_alamat_supplier').val(alamat);
-        $('#edit_nohp_supplier').val(nohp);
-        $('#edit_email_supplier').val(email);
+        let row = getRowData(this);
+        $('#edit_kd_supplier').val(row.kd_supplier);
+        $('#edit_nama_supplier').val(row.nama);
+        $('#edit_alamat_supplier').val(row.alamat);
+        $('#edit_nohp_supplier').val(row.no_hp);
+        $('#edit_email_supplier').val(row.email);
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_supplier = $(this).data('kd-supplier');
-        $('#hapus_kd_supplier').val(kd_supplier);
+        let row = getRowData(this);
+        $('#hapus_kd_supplier').val(row.kd_supplier);
   });
- 
+
 </script>
 
 

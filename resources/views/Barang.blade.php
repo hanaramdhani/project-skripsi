@@ -50,36 +50,6 @@
                       </tr>
                       </thead>
                       <tbody>
-                      <?php foreach ($data as $key => $value): ?>
-                          <tr class="data-row">
-                            <td class="text-center"><?= $value->kd_barang ?></td>
-                            <td class="text-center"><?= $value->nama ?></td>
-                            <td class="text-center"><?= $value->status == 1 ? 'Aktif' : 'Tidak Aktif' ?></td>
-                            <td class="text-center"><?= $value->tanggal_daftar ?></td>
-                            <td class="text-center"><?= $value->keterangan ?></td>
-                            <td class="text-center">
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-warning edit-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalEdit"
-                                    data-kd-barang="<?= $value->kd_barang ?>"
-                                    data-nama-barang="<?= $value->nama ?>"
-                                    data-status-barang="<?= $value->status ?>"
-                                    data-keterangan-barang="<?= $value->keterangan ?>"
-                              ><i class="bi bi-pencil"></i>Edit</button>
-                              </button>
-                              <button 
-                                    type="button" 
-                                    class="btn btn-xs btn-danger hapus-data"
-                                    data-toggle="modal" 
-                                    data-target="#modalHapus"
-                                    data-kd-barang="<?= $value->kd_barang ?>"
-                              ><i class="bi bi-trash"></i>Hapus</button>
-                              </button>
-                            </td>
-                          </tr>
-                        <?php endforeach; ?>
                       </tbody>
                       <tfoot>
                       </tfoot>
@@ -226,33 +196,54 @@
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
   const table = $('#example2').DataTable({
+    processing: true,
+    serverSide: true,
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     autoWidth: false,
-    responsive: true
+    responsive: true,
+    ajax: {
+      url: "{{ route('data.master.barang') }}",
+      type: "GET"
+    },
+    columns: [
+      { data: 'kd_barang', className: 'text-center' },
+      { data: 'nama', className: 'text-center' },
+      { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
+      { data: 'tanggal_daftar', className: 'text-center' },
+      { data: 'keterangan', className: 'text-center' },
+      {
+        data: null, className: 'text-center', orderable: false, searchable: false,
+        render: function () {
+          return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
+                 '<button type="button" class="btn btn-xs btn-danger hapus-data" data-toggle="modal" data-target="#modalHapus"><i class="bi bi-trash"></i>Hapus</button>';
+        }
+      }
+    ]
   });
 
+  function getRowData(el) {
+    let tr = $(el).closest('tr');
+    if (tr.hasClass('child')) { tr = tr.prev(); }
+    return table.row(tr).data();
+  }
 
-    
   $('#example2 tbody').on('click', '.edit-data', function () {
-        let kd_barang = $(this).data('kd-barang');
-        let nama_barang = $(this).data('nama-barang');
-        let status = $(this).data('status-barang');
-        let keterangan = $(this).data('keterangan-barang');
-        $('#edit_kd_barang').val(kd_barang);
-        $('#edit_nama_barang').val(nama_barang);
-        $('#edit_status_barang').val(status);
-        $('#edit_keterangan_barang').val(keterangan);
+        let row = getRowData(this);
+        $('#edit_kd_barang').val(row.kd_barang);
+        $('#edit_nama_barang').val(row.nama);
+        $('#edit_status_barang').val(row.status);
+        $('#edit_keterangan_barang').val(row.keterangan);
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
-        let kd_barang = $(this).data('kd-barang');
-        $('#hapus_kd_barang').val(kd_barang);
+        let row = getRowData(this);
+        $('#hapus_kd_barang').val(row.kd_barang);
   });
- 
+
 </script>
 
 

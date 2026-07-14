@@ -9,13 +9,39 @@ class controllerJabatan extends Controller
 {
     public function viewMasterJabatan()
     {
-        $data = DB::select("SELECT * FROM m_jabatan");
-        
         $kd_jabatan_temporary = DB::select("SELECT TOP 1 kd_jabatan FROM m_jabatan ORDER BY kd_jabatan DESC");
         $kd_jb = substr($kd_jabatan_temporary[0]->kd_jabatan, -3);
         $incremented = str_pad((int)$kd_jb + 1, 3, '0', STR_PAD_LEFT);
         $kd_jabatan = 'JAA' . $incremented;
-        return view('jabatan', ['data' => $data, 'kd_jabatan' => $kd_jabatan]);
+        return view('jabatan', ['kd_jabatan' => $kd_jabatan]);
+    }
+
+    public function getDataJabatan(Request $request)
+    {
+        $draw   = (int) $request->input('draw', 1);
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        $search = $request->input('search.value', '');
+        $orderColumnIndex = (int) $request->input('order.0.column', 0);
+        $orderDir = strtolower($request->input('order.0.dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
+        $columnsMap = [ 0 => 'kd_jabatan', 1 => 'nama', 2 => 'status', 3 => 'keterangan' ];
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'kd_jabatan';
+        if ($length <= 0) { $length = 10; }
+        $where = []; $bindings = [];
+        if (!empty($search)) {
+            $where[] = "(kd_jabatan LIKE ? OR nama LIKE ? OR keterangan LIKE ?)";
+            $bindings[] = "%$search%"; $bindings[] = "%$search%"; $bindings[] = "%$search%";
+        }
+        $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM m_jabatan")[0]->c;
+        $recordsFiltered = DB::select("SELECT COUNT(*) AS c FROM m_jabatan $whereSql", $bindings)[0]->c;
+        $sql = "SELECT kd_jabatan, nama, [status] AS status, keterangan FROM m_jabatan $whereSql
+                ORDER BY $orderColumn $orderDir OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
+        $data = DB::select($sql, $bindings);
+        return response()->json([
+            'draw' => $draw, 'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered, 'data' => $data,
+        ]);
     }
 
     public function inputJabatan(Request $request)

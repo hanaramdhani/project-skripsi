@@ -14,16 +14,6 @@ class controllerBiaya extends Controller
 {
     public function viewMasterBiaya(): View
     {
-        $data = DB::select("SELECT
-                                kd_biaya,
-                                m_biaya.nama AS biaya,
-                                m_biaya.keterangan AS keterangan,
-                                m_biaya.[status] AS [status],
-                                m_akun.kd_akun,
-                                m_akun.nama AS akun
-                            FROM m_biaya
-                            INNER JOIN m_akun ON m_biaya.kd_akun = m_akun.kd_akun");
-
         $kd_biaya = $this->nextKdBiaya();
 
         $akun = DB::select("SELECT
@@ -31,7 +21,64 @@ class controllerBiaya extends Controller
                                 nama AS akun
                             FROM m_akun WHERE [status]=1");
 
-        return view('biaya', ['data' => $data, 'kd_biaya' => $kd_biaya, 'akun' => $akun]);
+        return view('biaya', ['kd_biaya' => $kd_biaya, 'akun' => $akun]);
+    }
+
+    public function getDataBiaya(Request $request): JsonResponse
+    {
+        $draw   = (int) $request->input('draw', 1);
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        $search = $request->input('search.value', '');
+
+        $orderColumnIndex = (int) $request->input('order.0.column', 0);
+        $orderDir = strtolower((string) $request->input('order.0.dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
+        $columnsMap = [
+            0 => 'm_biaya.kd_biaya',
+            1 => 'm_biaya.nama',
+            2 => 'm_biaya.[status]',
+            3 => 'm_biaya.keterangan',
+            4 => 'm_akun.nama',
+        ];
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'm_biaya.kd_biaya';
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        $from = "FROM m_biaya INNER JOIN m_akun ON m_biaya.kd_akun = m_akun.kd_akun";
+
+        $where = [];
+        $bindings = [];
+        if (!empty($search)) {
+            $where[] = "(m_biaya.kd_biaya LIKE ? OR m_biaya.nama LIKE ? OR m_biaya.keterangan LIKE ? OR m_akun.nama LIKE ?)";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+        }
+        $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM m_biaya")[0]->c;
+        $recordsFiltered = DB::select("SELECT COUNT(*) AS c $from $whereSql", $bindings)[0]->c;
+
+        $sql = "SELECT
+                    m_biaya.kd_biaya AS kd_biaya,
+                    m_biaya.nama AS biaya,
+                    m_biaya.keterangan AS keterangan,
+                    m_biaya.[status] AS [status],
+                    m_akun.kd_akun AS kd_akun,
+                    m_akun.nama AS akun
+                $from $whereSql
+                ORDER BY $orderColumn $orderDir
+                OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
+        $data = DB::select($sql, $bindings);
+
+        return response()->json([
+            'draw' => $draw,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ]);
     }
 
     public function inputBiaya(Request $request): RedirectResponse
