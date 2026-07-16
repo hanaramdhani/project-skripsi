@@ -190,4 +190,7 @@ Route::middleware('auth.user')->group(function () {
     // Export Excel laporan keuangan (multi-laporan dalam 1 file)
     Route::get('/laporan/export', [LaporanController::class,'export'])->name('laporan.export');
 
+    // Generate / refresh jurnal umum (SP: 2 hari lalu s/d sekarang)
+    Route::post('/jurnal/refresh', [LaporanController::class,'refreshJurnal'])->name('jurnal.refresh');
+
 });

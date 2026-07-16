@@ -190,18 +190,18 @@ class ExcelXml
         return <<<XML
 <Styles>
  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Bottom"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>
- <Style ss:ID="title"><Font ss:Bold="1" ss:Size="16"/></Style>
- <Style ss:ID="subtitle"><Font ss:Size="11" ss:Color="#555555"/></Style>
+ <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14"/><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style>
+ <Style ss:ID="subtitle"><Font ss:Size="11" ss:Color="#555555"/><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style>
  <Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#343A40" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
- <Style ss:ID="group"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#6C757D" ss:Pattern="Solid"/></Style>
+ <Style ss:ID="group"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#6C757D" ss:Pattern="Solid"/><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style>
  <Style ss:ID="bold"><Font ss:Bold="1"/></Style>
- <Style ss:ID="cell"><Alignment ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>
+ <Style ss:ID="cell"><Alignment ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>
  <Style ss:ID="cellCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>
  <Style ss:ID="money"><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>
- <Style ss:ID="moneyBold"><Font ss:Bold="1"/><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Right"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/></Style>
- <Style ss:ID="moneyTotal"><Font ss:Bold="1" ss:Color="#FFFFFF"/><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Right"/><Interior ss:Color="#343A40" ss:Pattern="Solid"/></Style>
- <Style ss:ID="totalLabel"><Font ss:Bold="1"/><Alignment ss:Horizontal="Right"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/></Style>
- <Style ss:ID="totalLabelDark"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Alignment ss:Horizontal="Right"/><Interior ss:Color="#343A40" ss:Pattern="Solid"/></Style>
+ <Style ss:ID="moneyBold"><Font ss:Bold="1"/><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/></Style>
+ <Style ss:ID="moneyTotal"><Font ss:Bold="1" ss:Color="#FFFFFF"/><NumberFormat ss:Format="#,##0.00"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Interior ss:Color="#343A40" ss:Pattern="Solid"/></Style>
+ <Style ss:ID="totalLabel"><Font ss:Bold="1"/><Alignment ss:Horizontal="Right" ss:Vertical="Center" ss:WrapText="1"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/></Style>
+ <Style ss:ID="totalLabelDark"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Alignment ss:Horizontal="Right" ss:Vertical="Center" ss:WrapText="1"/><Interior ss:Color="#343A40" ss:Pattern="Solid"/></Style>
 </Styles>
 
 XML;

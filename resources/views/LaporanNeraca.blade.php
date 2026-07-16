@@ -23,6 +23,7 @@
 
     <section class="content">
       <div class="container-fluid">
+        @include('partials.flash')
         <div class="row">
           <div class="col-md-12">
             <div class="card card-outline card-primary">
@@ -69,6 +70,9 @@
                   </small>
                 </h3>
                 <div class="card-tools">
+                  <button type="button" id="btnRefreshJurnal" class="btn btn-sm btn-warning">
+                    <i class="bi bi-arrow-repeat"></i> Refresh Jurnal
+                  </button>
                   <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modalDownloadLaporan">
                     <i class="bi bi-file-earmark-excel"></i> Download Laporan
                   </button>

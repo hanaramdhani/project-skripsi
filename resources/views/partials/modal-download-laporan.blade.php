@@ -68,9 +68,22 @@
   </div>
 </div>
 
+{{-- Form tersembunyi untuk Refresh Jurnal (dipicu tombol di card-tools) --}}
+<form id="formRefreshJurnal" method="POST" action="{{ route('jurnal.refresh') }}" class="d-none">
+  @csrf
+</form>
+
 @push('scripts')
 <script>
   $(function () {
+    $('#btnRefreshJurnal').on('click', function () {
+      if (confirm('Generate ulang jurnal umum untuk 2 hari terakhir sampai sekarang?')) {
+        var $b = $(this);
+        $b.prop('disabled', true).html('<i class="bi bi-arrow-repeat"></i> Memproses...');
+        $('#formRefreshJurnal').submit();
+      }
+    });
+
     $('#formDownloadLaporan').on('submit', function (e) {
       if ($('.chk-laporan:checked').length === 0) {
         e.preventDefault();

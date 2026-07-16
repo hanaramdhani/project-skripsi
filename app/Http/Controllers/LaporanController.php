@@ -229,6 +229,29 @@ class LaporanController extends Controller
         return $xls->download($filename);
     }
 
+    // =====================================================================
+    // Generate / Refresh Jurnal Umum
+    // Memanggil SP sp_Generate_Jurnal_Umum dari 2 hari lalu s/d sekarang.
+    // =====================================================================
+    public function refreshJurnal(Request $req)
+    {
+        $start = date('Y-m-d H:i:s', strtotime('-2 days'));
+        $end   = date('Y-m-d H:i:s');
+
+        try {
+            DB::statement("EXEC sp_Generate_Jurnal_Umum ?, ?", [$start, $end]);
+            return back()->with('flash', [
+                'type' => 'success',
+                'text' => "Jurnal umum berhasil di-generate untuk periode $start s/d $end.",
+            ]);
+        } catch (\Throwable $e) {
+            return back()->with('flash', [
+                'type' => 'error',
+                'text' => 'Gagal generate jurnal: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
     private function periodeLabel($tgl_awal, $tgl_akhir)
     {
         $fmt = function ($t) {
@@ -243,7 +266,7 @@ class LaporanController extends Controller
         $d = $this->dataJurnalUmum($tgl_awal, $tgl_akhir);
         $rows = [];
 
-        $rows[] = [ExcelXml::text('JURNAL UMUM', 'title', 6)];
+        $rows[] = ExcelXml::row([ExcelXml::text('JURNAL UMUM', 'title', 6)], 22);
         $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 6)];
         $rows[] = []; // baris kosong
 
@@ -291,7 +314,7 @@ class LaporanController extends Controller
         $d = $this->dataLabaRugi($tgl_awal, $tgl_akhir);
         $rows = [];
 
-        $rows[] = [ExcelXml::text('LAPORAN LABA RUGI', 'title', 2)];
+        $rows[] = ExcelXml::row([ExcelXml::text('LAPORAN LABA RUGI', 'title', 2)], 22);
         $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 2)];
         $rows[] = [];
 
@@ -299,7 +322,7 @@ class LaporanController extends Controller
             ExcelXml::text('KODE COA', 'header'),
             ExcelXml::text('NAMA AKUN', 'header'),
             ExcelXml::text('NILAI', 'header'),
-        ], 24);
+        ], 30);
 
         if (empty($d['grouped'])) {
             $rows[] = [ExcelXml::text('Tidak ada data pada periode ini.', 'cellCenter', 2)];
@@ -313,25 +336,25 @@ class LaporanController extends Controller
                         ExcelXml::number($item->nilai, 'money'),
                     ];
                 }
-                $rows[] = [
+                $rows[] = ExcelXml::row([
                     ExcelXml::text('Subtotal ' . $kategori, 'totalLabel', 1),
                     ExcelXml::number($group['subtotal'], 'moneyBold'),
-                ];
+                ], 32);
             }
         }
 
-        $rows[] = [
+        $rows[] = ExcelXml::row([
             ExcelXml::text('TOTAL PENDAPATAN', 'totalLabel', 1),
             ExcelXml::number($d['total_pendapatan'], 'moneyBold'),
-        ];
-        $rows[] = [
+        ], 32);
+        $rows[] = ExcelXml::row([
             ExcelXml::text('TOTAL BEBAN', 'totalLabel', 1),
             ExcelXml::number($d['total_beban'], 'moneyBold'),
-        ];
-        $rows[] = [
+        ], 32);
+        $rows[] = ExcelXml::row([
             ExcelXml::text($d['laba_bersih'] >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH', 'totalLabelDark', 1),
             ExcelXml::number($d['laba_bersih'], 'moneyTotal'),
-        ];
+        ], 32);
 
         return $rows;
     }
@@ -354,7 +377,7 @@ class LaporanController extends Controller
         $totalPasiva     = $totalLiabilitas + $totalEkuitas;
         $isBalance       = abs($totalAset - $totalPasiva) < 0.01;
 
-        $rows[] = [ExcelXml::text('LAPORAN NERACA (BALANCE SHEET)', 'title', 2)];
+        $rows[] = ExcelXml::row([ExcelXml::text('LAPORAN NERACA (BALANCE SHEET)', 'title', 2)], 40);
         $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 2)];
         $rows[] = [];
 
@@ -362,7 +385,7 @@ class LaporanController extends Controller
             ExcelXml::text('KODE COA', 'header'),
             ExcelXml::text('NAMA AKUN', 'header'),
             ExcelXml::text('JUMLAH', 'header'),
-        ], 24);
+        ], 30);
 
         $adaData = false;
         $blok = function ($key, $label, $total) use (&$rows, $grouped) {
@@ -377,10 +400,10 @@ class LaporanController extends Controller
                     ExcelXml::number($item->saldo, 'money'),
                 ];
             }
-            $rows[] = [
+            $rows[] = ExcelXml::row([
                 ExcelXml::text('TOTAL ' . $label, 'totalLabel', 1),
                 ExcelXml::number($total, 'moneyBold'),
-            ];
+            ], 32);
             return true;
         };
 
@@ -398,14 +421,14 @@ class LaporanController extends Controller
             $rows[] = [ExcelXml::text('Tidak ada data pada periode ini.', 'cellCenter', 2)];
         }
 
-        $rows[] = [
+        $rows[] = ExcelXml::row([
             ExcelXml::text('TOTAL LIABILITAS + EKUITAS', 'totalLabel', 1),
             ExcelXml::number($totalPasiva, 'moneyBold'),
-        ];
-        $rows[] = [
+        ], 32);
+        $rows[] = ExcelXml::row([
             ExcelXml::text($isBalance ? 'BALANCE SHEET (Seimbang)' : 'BALANCE SHEET (Tidak Seimbang)', 'totalLabelDark', 1),
             ExcelXml::number($totalAset, 'moneyTotal'),
-        ];
+        ], 32);
 
         return $rows;
     }
