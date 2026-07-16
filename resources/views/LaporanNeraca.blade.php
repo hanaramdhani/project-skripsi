@@ -69,6 +69,9 @@
                   </small>
                 </h3>
                 <div class="card-tools">
+                  <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modalDownloadLaporan">
+                    <i class="bi bi-file-earmark-excel"></i> Download Laporan
+                  </button>
                   <button type="button" class="btn btn-sm btn-default" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
                 </div>
               </div>
@@ -174,6 +177,12 @@
       </div>
     </section>
   </div>
+
+  @include('partials.modal-download-laporan', [
+      'current'   => 'neraca',
+      'tgl_awal'  => $tgl_awal,
+      'tgl_akhir' => $tgl_akhir,
+  ])
 
 @endsection
 

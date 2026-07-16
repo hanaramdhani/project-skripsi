@@ -53,6 +53,11 @@
                     Periode: {{ \Carbon\Carbon::parse($tgl_awal)->format('d/m/Y') }} s/d {{ \Carbon\Carbon::parse($tgl_akhir)->format('d/m/Y') }}
                   </small>
                 </h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modalDownloadLaporan">
+                    <i class="bi bi-file-earmark-excel"></i> Download Laporan
+                  </button>
+                </div>
               </div>
               <div class="card-body table-responsive">
                 <table id="tbl-jurnal-umum" class="table table-bordered table-hover table-striped">
@@ -99,6 +104,12 @@
       </div>
     </section>
   </div>
+
+  @include('partials.modal-download-laporan', [
+      'current'   => 'jurnal_umum',
+      'tgl_awal'  => $tgl_awal,
+      'tgl_akhir' => $tgl_akhir,
+  ])
 
 @endsection
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ExcelXml;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -22,14 +23,30 @@ class LaporanController extends Controller
         return view('LaporanLabaRugi', ['data'=>$data]);
     }
 
-    public function viewJurnalUmum(Request $req)
+    // =====================================================================
+    // Helper: tanggal default (tanggal jurnal terakhir)
+    // =====================================================================
+    private function defaultTgl()
     {
         $latest = DB::select("SELECT MAX(tgl_jurnal) AS tgl FROM jurnal_umum");
-        $latest_tgl = $latest[0]->tgl ?? date('Y-m-d');
+        return $latest[0]->tgl ?? date('Y-m-d');
+    }
 
-        $tgl_awal  = $req->tgl_awal  ?? $latest_tgl;
-        $tgl_akhir = $req->tgl_akhir ?? $latest_tgl;
+    private function resolvePeriode(Request $req)
+    {
+        $latest = $this->defaultTgl();
+        return [
+            $req->tgl_awal  ?? $latest,
+            $req->tgl_akhir ?? $latest,
+        ];
+    }
 
+    // =====================================================================
+    // Query masing-masing laporan (dipakai ulang oleh view & export)
+    // =====================================================================
+
+    private function dataJurnalUmum($tgl_awal, $tgl_akhir)
+    {
         $data = DB::select("
             SELECT tgl_jurnal, no_bukti, coa_kode, debit, kredit, sumber
             FROM jurnal_umum
@@ -44,23 +61,15 @@ class LaporanController extends Controller
             $total_kredit += (float) $row->kredit;
         }
 
-        return view('JurnalUmum', [
+        return [
             'data'         => $data,
-            'tgl_awal'     => $tgl_awal,
-            'tgl_akhir'    => $tgl_akhir,
             'total_debit'  => $total_debit,
             'total_kredit' => $total_kredit,
-        ]);
+        ];
     }
 
-    public function viewLaporanLabaRugi(Request $req)
+    private function dataLabaRugi($tgl_awal, $tgl_akhir)
     {
-        $latest = DB::select("SELECT MAX(tgl_jurnal) AS tgl FROM jurnal_umum");
-        $latest_tgl = $latest[0]->tgl ?? date('Y-m-d');
-
-        $tgl_awal  = $req->tgl_awal  ?? $latest_tgl;
-        $tgl_akhir = $req->tgl_akhir ?? $latest_tgl;
-        
         $rows = DB::select("SELECT * FROM dbo.fn_Laporan_LabaRugi(?, ?) ORDER BY coa_kode", [$tgl_awal, $tgl_akhir]);
 
         $grouped = [];
@@ -74,9 +83,6 @@ class LaporanController extends Controller
             $grouped[$kategori]['items'][] = $r;
             $grouped[$kategori]['subtotal'] += (float) $r->nilai;
 
-            // SP mengembalikan 3 kategori: 'Pendapatan', 'Harga Pokok Penjualan',
-            // 'Biaya Operasional'. Hanya 'Pendapatan' yang revenue; HPP & biaya
-            // operasional adalah beban (pengurang laba), bukan ditambahkan.
             if (stripos($kategori, 'pendapatan') !== false) {
                 $total_pendapatan += (float) $r->nilai;
             } else {
@@ -85,24 +91,16 @@ class LaporanController extends Controller
         }
         $laba_bersih = $total_pendapatan - $total_beban;
 
-        return view('LaporanLabaRugiPage', [
+        return [
             'grouped'          => $grouped,
             'total_pendapatan' => $total_pendapatan,
             'total_beban'      => $total_beban,
             'laba_bersih'      => $laba_bersih,
-            'tgl_awal'         => $tgl_awal,
-            'tgl_akhir'        => $tgl_akhir,
-        ]);
+        ];
     }
 
-    public function viewLaporanNeraca(Request $req)
+    private function dataNeraca($tgl_awal, $tgl_akhir)
     {
-        $latest = DB::select("SELECT MAX(tgl_jurnal) AS tgl FROM jurnal_umum");
-        $latest_tgl = $latest[0]->tgl ?? date('Y-m-d');
-
-        $tgl_awal  = $req->tgl_awal  ?? $latest_tgl;
-        $tgl_akhir = $req->tgl_akhir ?? $latest_tgl;
-
         $rows = DB::select("SELECT * FROM dbo.fn_Neraca_Saldo(?, ?) ORDER BY coa_kode", [$tgl_awal, $tgl_akhir]);
 
         $grouped = [];
@@ -123,23 +121,54 @@ class LaporanController extends Controller
             $grand_saldo  += (float) $r->saldo;
         }
 
-        return view('LaporanNeraca', [
+        return [
             'grouped'      => $grouped,
             'grand_debit'  => $grand_debit,
             'grand_kredit' => $grand_kredit,
             'grand_saldo'  => $grand_saldo,
-            'tgl_awal'     => $tgl_awal,
-            'tgl_akhir'    => $tgl_akhir,
-        ]);
+        ];
+    }
+
+    // =====================================================================
+    // Halaman (view)
+    // =====================================================================
+
+    public function viewJurnalUmum(Request $req)
+    {
+        [$tgl_awal, $tgl_akhir] = $this->resolvePeriode($req);
+        $d = $this->dataJurnalUmum($tgl_awal, $tgl_akhir);
+
+        return view('JurnalUmum', array_merge($d, [
+            'tgl_awal'  => $tgl_awal,
+            'tgl_akhir' => $tgl_akhir,
+        ]));
+    }
+
+    public function viewLaporanLabaRugi(Request $req)
+    {
+        [$tgl_awal, $tgl_akhir] = $this->resolvePeriode($req);
+        $d = $this->dataLabaRugi($tgl_awal, $tgl_akhir);
+
+        return view('LaporanLabaRugiPage', array_merge($d, [
+            'tgl_awal'  => $tgl_awal,
+            'tgl_akhir' => $tgl_akhir,
+        ]));
+    }
+
+    public function viewLaporanNeraca(Request $req)
+    {
+        [$tgl_awal, $tgl_akhir] = $this->resolvePeriode($req);
+        $d = $this->dataNeraca($tgl_awal, $tgl_akhir);
+
+        return view('LaporanNeraca', array_merge($d, [
+            'tgl_awal'  => $tgl_awal,
+            'tgl_akhir' => $tgl_akhir,
+        ]));
     }
 
     public function viewLaporanArusKas(Request $req)
     {
-        $latest = DB::select("SELECT MAX(tgl_jurnal) AS tgl FROM jurnal_umum");
-        $latest_tgl = $latest[0]->tgl ?? date('Y-m-d');
-
-        $tgl_awal  = $req->tgl_awal  ?? $latest_tgl;
-        $tgl_akhir = $req->tgl_akhir ?? $latest_tgl;
+        [$tgl_awal, $tgl_akhir] = $this->resolvePeriode($req);
 
         $rows = DB::select("EXEC sp_Arus_Kas ?, ?", [$tgl_awal, $tgl_akhir]);
 
@@ -164,5 +193,220 @@ class LaporanController extends Controller
             'tgl_awal'    => $tgl_awal,
             'tgl_akhir'   => $tgl_akhir,
         ]);
+    }
+
+    // =====================================================================
+    // Export Excel (multi-laporan dalam 1 file, 1 sheet per laporan)
+    // =====================================================================
+
+    public function export(Request $req)
+    {
+        [$tgl_awal, $tgl_akhir] = $this->resolvePeriode($req);
+
+        // Laporan yang dipilih (checkbox). Default: jurnal_umum bila kosong.
+        $reports = (array) $req->input('reports', []);
+        $reports = array_values(array_filter($reports, function ($r) {
+            return in_array($r, ['jurnal_umum', 'laba_rugi', 'neraca'], true);
+        }));
+        if (empty($reports)) {
+            $reports = ['jurnal_umum'];
+        }
+
+        $xls = new ExcelXml();
+
+        foreach ($reports as $r) {
+            if ($r === 'jurnal_umum') {
+                $xls->addSheet('Jurnal Umum', $this->sheetJurnalUmum($tgl_awal, $tgl_akhir));
+            } elseif ($r === 'laba_rugi') {
+                $xls->addSheet('Laba Rugi', $this->sheetLabaRugi($tgl_awal, $tgl_akhir));
+            } elseif ($r === 'neraca') {
+                $xls->addSheet('Neraca', $this->sheetNeraca($tgl_awal, $tgl_akhir));
+            }
+        }
+
+        $filename = 'Laporan_' . str_replace('-', '', $tgl_awal) . '_' . str_replace('-', '', $tgl_akhir) . '.xls';
+
+        return $xls->download($filename);
+    }
+
+    private function periodeLabel($tgl_awal, $tgl_akhir)
+    {
+        $fmt = function ($t) {
+            $ts = strtotime($t);
+            return $ts ? date('d/m/Y', $ts) : $t;
+        };
+        return 'Periode: ' . $fmt($tgl_awal) . ' s/d ' . $fmt($tgl_akhir);
+    }
+
+    private function sheetJurnalUmum($tgl_awal, $tgl_akhir)
+    {
+        $d = $this->dataJurnalUmum($tgl_awal, $tgl_akhir);
+        $rows = [];
+
+        $rows[] = [ExcelXml::text('JURNAL UMUM', 'title', 6)];
+        $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 6)];
+        $rows[] = []; // baris kosong
+
+        $rows[] = ExcelXml::row([
+            ExcelXml::text('NO', 'header'),
+            ExcelXml::text('TANGGAL', 'header'),
+            ExcelXml::text('NO. BUKTI', 'header'),
+            ExcelXml::text('KODE COA', 'header'),
+            ExcelXml::text('SUMBER', 'header'),
+            ExcelXml::text('DEBIT', 'header'),
+            ExcelXml::text('KREDIT', 'header'),
+        ], 30);
+
+        $no = 0;
+        foreach ($d['data'] as $row) {
+            $no++;
+            $ts = strtotime($row->tgl_jurnal);
+            $rows[] = [
+                ExcelXml::text($no, 'cellCenter'),
+                ExcelXml::text($ts ? date('d/m/Y', $ts) : $row->tgl_jurnal, 'cellCenter'),
+                ExcelXml::text($row->no_bukti, 'cellCenter'),
+                ExcelXml::text($row->coa_kode, 'cellCenter'),
+                ExcelXml::text($row->sumber, 'cell'),
+                ExcelXml::number($row->debit, 'money'),
+                ExcelXml::number($row->kredit, 'money'),
+            ];
+        }
+
+        if ($no === 0) {
+            $rows[] = [ExcelXml::text('Tidak ada data pada periode ini.', 'cellCenter', 6)];
+        }
+
+        // 'TOTAL' di-merge menutup kolom NO..SUMBER (A:E), lalu nilai di DEBIT (F) & KREDIT (G).
+        $rows[] = [
+            ExcelXml::text('TOTAL', 'totalLabelDark', 4),
+            ExcelXml::number($d['total_debit'], 'moneyTotal'),
+            ExcelXml::number($d['total_kredit'], 'moneyTotal'),
+        ];
+
+        return $rows;
+    }
+
+    private function sheetLabaRugi($tgl_awal, $tgl_akhir)
+    {
+        $d = $this->dataLabaRugi($tgl_awal, $tgl_akhir);
+        $rows = [];
+
+        $rows[] = [ExcelXml::text('LAPORAN LABA RUGI', 'title', 2)];
+        $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 2)];
+        $rows[] = [];
+
+        $rows[] = ExcelXml::row([
+            ExcelXml::text('KODE COA', 'header'),
+            ExcelXml::text('NAMA AKUN', 'header'),
+            ExcelXml::text('NILAI', 'header'),
+        ], 24);
+
+        if (empty($d['grouped'])) {
+            $rows[] = [ExcelXml::text('Tidak ada data pada periode ini.', 'cellCenter', 2)];
+        } else {
+            foreach ($d['grouped'] as $kategori => $group) {
+                $rows[] = [ExcelXml::text(strtoupper($kategori), 'group', 2)];
+                foreach ($group['items'] as $item) {
+                    $rows[] = [
+                        ExcelXml::text($item->coa_kode, 'cellCenter'),
+                        ExcelXml::text($item->coa_nama, 'cell'),
+                        ExcelXml::number($item->nilai, 'money'),
+                    ];
+                }
+                $rows[] = [
+                    ExcelXml::text('Subtotal ' . $kategori, 'totalLabel', 1),
+                    ExcelXml::number($group['subtotal'], 'moneyBold'),
+                ];
+            }
+        }
+
+        $rows[] = [
+            ExcelXml::text('TOTAL PENDAPATAN', 'totalLabel', 1),
+            ExcelXml::number($d['total_pendapatan'], 'moneyBold'),
+        ];
+        $rows[] = [
+            ExcelXml::text('TOTAL BEBAN', 'totalLabel', 1),
+            ExcelXml::number($d['total_beban'], 'moneyBold'),
+        ];
+        $rows[] = [
+            ExcelXml::text($d['laba_bersih'] >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH', 'totalLabelDark', 1),
+            ExcelXml::number($d['laba_bersih'], 'moneyTotal'),
+        ];
+
+        return $rows;
+    }
+
+    private function sheetNeraca($tgl_awal, $tgl_akhir)
+    {
+        $d = $this->dataNeraca($tgl_awal, $tgl_akhir);
+        $grouped = $d['grouped'];
+        $rows = [];
+
+        $tipeLabels = [
+            'ASSET'     => 'ASET',
+            'LIABILITY' => 'LIABILITAS (KEWAJIBAN)',
+            'EQUITY'    => 'EKUITAS (MODAL)',
+        ];
+
+        $totalAset       = $grouped['ASSET']['saldo']     ?? 0;
+        $totalLiabilitas = $grouped['LIABILITY']['saldo'] ?? 0;
+        $totalEkuitas    = $grouped['EQUITY']['saldo']    ?? 0;
+        $totalPasiva     = $totalLiabilitas + $totalEkuitas;
+        $isBalance       = abs($totalAset - $totalPasiva) < 0.01;
+
+        $rows[] = [ExcelXml::text('LAPORAN NERACA (BALANCE SHEET)', 'title', 2)];
+        $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 2)];
+        $rows[] = [];
+
+        $rows[] = ExcelXml::row([
+            ExcelXml::text('KODE COA', 'header'),
+            ExcelXml::text('NAMA AKUN', 'header'),
+            ExcelXml::text('JUMLAH', 'header'),
+        ], 24);
+
+        $adaData = false;
+        $blok = function ($key, $label, $total) use (&$rows, $grouped) {
+            if (empty($grouped[$key])) {
+                return false;
+            }
+            $rows[] = [ExcelXml::text($label, 'group', 2)];
+            foreach ($grouped[$key]['items'] as $item) {
+                $rows[] = [
+                    ExcelXml::text($item->coa_kode, 'cellCenter'),
+                    ExcelXml::text($item->coa_nama, 'cell'),
+                    ExcelXml::number($item->saldo, 'money'),
+                ];
+            }
+            $rows[] = [
+                ExcelXml::text('TOTAL ' . $label, 'totalLabel', 1),
+                ExcelXml::number($total, 'moneyBold'),
+            ];
+            return true;
+        };
+
+        if ($blok('ASSET', $tipeLabels['ASSET'], $totalAset)) {
+            $adaData = true;
+        }
+        if ($blok('LIABILITY', $tipeLabels['LIABILITY'], $totalLiabilitas)) {
+            $adaData = true;
+        }
+        if ($blok('EQUITY', $tipeLabels['EQUITY'], $totalEkuitas)) {
+            $adaData = true;
+        }
+
+        if (!$adaData) {
+            $rows[] = [ExcelXml::text('Tidak ada data pada periode ini.', 'cellCenter', 2)];
+        }
+
+        $rows[] = [
+            ExcelXml::text('TOTAL LIABILITAS + EKUITAS', 'totalLabel', 1),
+            ExcelXml::number($totalPasiva, 'moneyBold'),
+        ];
+        $rows[] = [
+            ExcelXml::text($isBalance ? 'BALANCE SHEET (Seimbang)' : 'BALANCE SHEET (Tidak Seimbang)', 'totalLabelDark', 1),
+            ExcelXml::number($totalAset, 'moneyTotal'),
+        ];
+
+        return $rows;
     }
 }
