@@ -32,7 +32,7 @@
               <div class="card-header p-2">
                 <ul class="nav nav-pills">
                   <li class="nav-item"><a class="nav-link active" href="#activity" data-toggle="tab">Data Pembayaran Pajak</a></li>
-                  <li class="nav-item"><a class="nav-link" href="#settings" data-toggle="tab"><i class="bi bi-plus"></i> Input Data</a></li>
+                  <li class="nav-item"><a class="nav-link" href="#settings" data-toggle="tab"><i class="bi bi-plus"></i> Proses Pajak</a></li>
                 </ul>
               </div><!-- /.card-header -->
               <div class="card-body">
@@ -47,6 +47,7 @@
                           <th class="text-center">JENIS PAJAK</th>
                           <th class="text-center">NOMINAL</th>
                           <th class="text-center">NTPN</th>
+                          <th class="text-center">REFF</th>
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
@@ -159,79 +160,153 @@
                     </div>
                   </div>
                   <div class="tab-pane" id="settings">
-                    <form class="form-horizontal" id="frm-input" name="frm_input" method="POST" action="{{ route('input.pembayaran.pajak') }}">
-                    <?php
-                        date_default_timezone_set('Asia/Jakarta');
-                        echo '<div class="col-sm-7"><h3 class="text-right">'.date('d/m/Y').'</h3></div>';
-                    ?>
-                      @csrf
-                      <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">NTPN</label>
-                        <div class="col-sm-5">
-                          <input type="text" name="ntpn" id="ntpn" class="form-control" value="{{ old('ntpn', $ntpn) }}" readonly>
-                        </div>
+                    <!-- Aksi: Generate hutang pajak manual -->
+                    <div class="d-flex justify-content-end mb-2">
+                      <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalGenerate">
+                        <i class="bi bi-gear"></i> Generate Hutang Pajak
+                      </button>
+                    </div>
+
+                    <!-- Sub-tab: Belum Dibayar / Sudah Dibayar -->
+                    <ul class="nav nav-tabs" id="prosesPajakTab" role="tablist">
+                      <li class="nav-item">
+                        <a class="nav-link active" id="tab-belum-link" data-toggle="tab" href="#tab-belum" role="tab">
+                          <i class="bi bi-exclamation-circle text-danger"></i> Belum Dibayar
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" id="tab-sudah-link" data-toggle="tab" href="#tab-sudah" role="tab">
+                          <i class="bi bi-check-circle text-success"></i> Sudah Dibayar
+                        </a>
+                      </li>
+                    </ul>
+                    <div class="tab-content pt-3">
+                      <!-- Belum Dibayar -->
+                      <div class="tab-pane fade show active" id="tab-belum" role="tabpanel">
+                        <table id="tbl-belum" class="table table-bordered table-hover" style="width:100%">
+                          <thead>
+                          <tr>
+                            <th class="text-center">NO TRANSAKSI</th>
+                            <th class="text-center">TGL PAJAK</th>
+                            <th class="text-center">JATUH TEMPO</th>
+                            <th class="text-center">JENIS PAJAK</th>
+                            <th class="text-center">NOMINAL</th>
+                            <th class="text-center">KETERANGAN</th>
+                            <th class="text-center">#</th>
+                          </tr>
+                          </thead>
+                          <tbody></tbody>
+                        </table>
                       </div>
-                      <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Tanggal</label>
-                        <div class="col-sm-5">
-                          <input type="date" name="tanggal" id="tanggal" class="form-control" value="{{ date('Y-m-d') }}" required>
-                        </div>
+                      <!-- Sudah Dibayar -->
+                      <div class="tab-pane fade" id="tab-sudah" role="tabpanel">
+                        <table id="tbl-sudah" class="table table-bordered table-hover" style="width:100%">
+                          <thead>
+                          <tr>
+                            <th class="text-center">NO TRANSAKSI</th>
+                            <th class="text-center">TGL PAJAK</th>
+                            <th class="text-center">JENIS PAJAK</th>
+                            <th class="text-center">NOMINAL</th>
+                            <th class="text-center">NTPN</th>
+                            <th class="text-center">TGL BAYAR</th>
+                          </tr>
+                          </thead>
+                          <tbody></tbody>
+                        </table>
                       </div>
-                      <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Masa Pajak</label>
-                        <div class="col-sm-5">
-                          <input type="month" name="masa_pajak" id="masa_pajak" class="form-control" value="{{ date('Y-m') }}" required>
-                        </div>
-                      </div>
-                      <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Jenis Pajak</label>
-                        <div class="col-sm-5">
-                          <select name="jenis_pajak" class="form-control" required>
-                            <option value="PPh 21">PPh 21</option>
-                            <option value="PPh 22">PPh 22</option>
-                            <option value="PPh 23">PPh 23</option>
-                            <option value="PPh 25">PPh 25</option>
-                            <option value="PPh 4 ayat 2">PPh 4 ayat 2</option>
-                            <option value="PPN">PPN</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Periode</label>
-                        <div class="col-sm-5">
-                          <div class="row">
-                            <div class="col-5">
-                              <select name="periode_bulan" id="periode_bulan" class="form-control" required>
-                                <?php foreach ($namaBulanID as $bln => $namaBln): ?>
-                                  <option value="<?= str_pad($bln, 2, '0', STR_PAD_LEFT) ?>" <?= $bln == (int) date('n') ? 'selected' : '' ?>><?= $namaBln ?></option>
-                                <?php endforeach; ?>
-                              </select>
-                            </div>
-                            <div class="col-4">
-                              <select name="periode_tahun" id="periode_tahun" class="form-control" required>
-                                <?php for ($th = (int) date('Y') + 1; $th >= 2020; $th--): ?>
-                                  <option value="<?= $th ?>" <?= $th == (int) date('Y') ? 'selected' : '' ?>><?= $th ?></option>
-                                <?php endfor; ?>
-                              </select>
-                            </div>
-                            <div class="col-3">
-                              <button type="button" class="btn btn-info btn-block" id="btn-cek-nominal"><i class="bi bi-search"></i> Cek</button>
-                            </div>
+                    </div>
+
+                    <!-- Modal Form Bayar (dipicu tombol Bayar pada tab Belum Dibayar) -->
+                    <div class="modal fade" id="modalBayar" tabindex="-1" role="dialog" aria-hidden="true">
+                      <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">Form Pembayaran Pajak</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
                           </div>
-                          <!-- Dikirim ke backend sebagai date: YYYY-MM-01 -->
-                          <input type="hidden" name="periode" id="periode">
+                          <form id="frm-input" name="frm_input" method="POST" action="{{ route('input.pembayaran.pajak') }}">
+                            @csrf
+                            <div class="modal-body">
+                              <input type="hidden" name="reff_no" id="bayar_reff_no">
+                              <div class="form-group">
+                                <label class="col-form-label">No Transaksi Hutang</label>
+                                <input type="text" id="bayar_reff_tampil" class="form-control" readonly>
+                              </div>
+                              <div class="form-group">
+                                <label class="col-form-label">NTPN</label>
+                                <input type="text" name="ntpn" id="bayar_ntpn" class="form-control" value="{{ old('ntpn', $ntpn) }}" readonly>
+                              </div>
+                              <div class="form-group">
+                                <label class="col-form-label">Tanggal</label>
+                                <input type="date" name="tanggal" id="bayar_tanggal" class="form-control" value="{{ date('Y-m-d') }}" required>
+                              </div>
+                              <div class="form-group">
+                                <label class="col-form-label">Masa Pajak</label>
+                                <input type="month" name="masa_pajak" id="bayar_masa_pajak" class="form-control" value="{{ date('Y-m') }}" required>
+                              </div>
+                              <div class="form-group">
+                                <label class="col-form-label">Jenis Pajak</label>
+                                <input type="text" name="jenis_pajak" id="bayar_jenis_pajak" class="form-control" readonly required>
+                              </div>
+                              <div class="form-group">
+                                <label class="col-form-label">Periode</label>
+                                <div class="row">
+                                  <div class="col-7">
+                                    <select name="periode_bulan" id="bayar_periode_bulan" class="form-control" required>
+                                      <?php foreach ($namaBulanID as $bln => $namaBln): ?>
+                                        <option value="<?= str_pad($bln, 2, '0', STR_PAD_LEFT) ?>"><?= $namaBln ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+                                  <div class="col-5">
+                                    <select name="periode_tahun" id="bayar_periode_tahun" class="form-control" required>
+                                      <?php for ($th = (int) date('Y') + 1; $th >= 2020; $th--): ?>
+                                        <option value="<?= $th ?>"><?= $th ?></option>
+                                      <?php endfor; ?>
+                                    </select>
+                                  </div>
+                                </div>
+                                <!-- Dikirim ke backend sebagai date: YYYY-MM-01 -->
+                                <input type="hidden" name="periode" id="bayar_periode">
+                              </div>
+                              <div class="form-group">
+                                <label class="col-form-label">Nominal</label>
+                                <input type="number" step="0.01" min="0" name="nominal" id="bayar_nominal" class="form-control" value="0" required>
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-dismiss="modal">Kembali</button>
+                              <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Bayar</button>
+                            </div>
+                          </form>
                         </div>
                       </div>
-                      <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Nominal</label>
-                        <div class="col-sm-5">
-                          <input type="number" step="0.01" min="0" name="nominal" id="nominal" class="form-control" value="0" required>
+                    </div>
+
+                    <!-- Modal Konfirmasi Generate Hutang Pajak -->
+                    <div class="modal fade" id="modalGenerate" tabindex="-1" role="dialog" aria-hidden="true">
+                      <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">Generate Hutang Pajak</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                          <div class="modal-body text-center">
+                            <i class="bi bi-exclamation-triangle text-warning" style="font-size:2.5rem;"></i>
+                            <p class="mt-2 mb-0">Pastikan semua transaksi di bulan sebelumnya sudah selesai terinput.</p>
+                            <small class="text-muted">Lanjutkan proses generate hutang pajak?</small>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-primary" id="btn-generate-lanjut"><i class="bi bi-play-circle"></i> Lanjutkan</button>
+                          </div>
                         </div>
                       </div>
-
-                       <button type="submit" class="btn btn-success text-right"><i class="bi bi-save"></i> Simpan</button>
-                    </form>
-
+                    </div>
                   </div>
                   <!-- /.tab-pane -->
                 </div>
@@ -291,6 +366,8 @@
           return d == null ? '' : Number(d).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         } },
       { data: 'ntpn', className: 'text-center' },
+      { data: 'reff_no', className: 'text-center', orderable: false,
+        render: function (d) { return d ? d : '-'; } },
       { data: null, className: 'text-center', orderable: false, searchable: false,
         render: function () {
           return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i> Edit</button> ' +
@@ -313,35 +390,114 @@
         return th + '-' + bl + '-01';
   }
 
-  // --- Form Input ---
-  function syncPeriodeInput() {
-        $('#periode').val(buildPeriode('#periode_tahun', '#periode_bulan'));
+  // --- Helper format angka ---
+  function fmtRupiah(d) {
+        return d == null ? '' : Number(d).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  syncPeriodeInput();
-  $('#periode_tahun, #periode_bulan').on('change', syncPeriodeInput);
-  $('#frm-input').on('submit', syncPeriodeInput);
 
-  // Tombol Cek Nominal: ambil nominal hutang pajak dari t_hutang_pajak.
-  $('#btn-cek-nominal').on('click', function () {
-        syncPeriodeInput();
-        const $btn        = $(this);
-        const periode     = $('#periode').val();           // YYYY-MM-01
-        const jenis_pajak = $('select[name="jenis_pajak"]').val();
+  // --- Tabel Hutang Pajak: Belum Dibayar ---
+  const tableBelum = $('#tbl-belum').DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        autoWidth: false,
+        order: [[1, 'desc']],
+        ajax: { url: "{{ route('data.hutang.pajak.list') }}", type: "GET", data: { paid: 0 } },
+        columns: [
+          { data: 'no_transaksi', className: 'text-center' },
+          { data: 'tgl_pajak_tampil', className: 'text-center' },
+          { data: 'jatuh_tempo_tampil', className: 'text-center' },
+          { data: 'jenis_pajak', className: 'text-center' },
+          { data: 'nominal', className: 'text-right', render: fmtRupiah },
+          { data: 'keterangan' },
+          { data: null, className: 'text-center', orderable: false, searchable: false,
+            render: function () {
+              return '<button type="button" class="btn btn-xs btn-success bayar-data" data-toggle="modal" data-target="#modalBayar"><i class="bi bi-cash-coin"></i> Bayar</button>';
+            } }
+        ]
+  });
 
-        $btn.prop('disabled', true);
-        $.get("{{ route('cek.hutang.pajak') }}", { periode: periode, jenis_pajak: jenis_pajak })
-          .done(function (res) {
-                $('#nominal').val(res.nominal);
-                if (!res.found) {
-                      alert('Tidak ada data hutang pajak untuk periode & jenis pajak tersebut.');
-                }
-          })
-          .fail(function () {
-                alert('Gagal mengambil nominal hutang pajak. Coba lagi.');
-          })
-          .always(function () {
-                $btn.prop('disabled', false);
-          });
+  // --- Tabel Hutang Pajak: Sudah Dibayar ---
+  const tableSudah = $('#tbl-sudah').DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        autoWidth: false,
+        order: [[1, 'desc']],
+        ajax: { url: "{{ route('data.hutang.pajak.list') }}", type: "GET", data: { paid: 1 } },
+        columns: [
+          { data: 'no_transaksi', className: 'text-center' },
+          { data: 'tgl_pajak_tampil', className: 'text-center' },
+          { data: 'jenis_pajak', className: 'text-center' },
+          { data: 'nominal', className: 'text-right', render: fmtRupiah },
+          { data: 'ntpn', className: 'text-center', render: function (d) { return d ? d : '-'; } },
+          { data: 'tanggal_bayar', className: 'text-center', render: function (d) { return d ? d : '-'; } }
+        ]
+  });
+
+  function getHutangRowData(el, dt) {
+        let tr = $(el).closest('tr');
+        if (tr.hasClass('child')) { tr = tr.prev(); }
+        return dt.row(tr).data();
+  }
+
+  // Perbaiki lebar kolom saat tab ditampilkan (DataTables di tab tersembunyi).
+  $('a[data-toggle="tab"]').on('shown.bs.tab', function () {
+        tableBelum.columns.adjust();
+        tableSudah.columns.adjust();
+  });
+
+  // --- Isi modal Bayar dari baris hutang pajak yang dipilih ---
+  function syncBayarPeriode() {
+        $('#bayar_periode').val(buildPeriode('#bayar_periode_tahun', '#bayar_periode_bulan'));
+  }
+  $('#bayar_periode_tahun, #bayar_periode_bulan').on('change', syncBayarPeriode);
+  $('#frm-input').on('submit', syncBayarPeriode);
+
+  $('#tbl-belum tbody').on('click', '.bayar-data', function () {
+        const row = getHutangRowData(this, tableBelum);
+        if (!row) { return; }
+
+        $('#bayar_reff_no').val(row.no_transaksi);
+        $('#bayar_reff_tampil').val(row.no_transaksi);
+        $('#bayar_jenis_pajak').val(row.jenis_pajak);
+        $('#bayar_nominal').val(row.nominal);
+
+        // periode_iso berformat YYYY-MM (dari tgl_pajak hutang).
+        const parts = String(row.periode_iso || '').split('-');
+        if (parts.length >= 2) {
+              $('#bayar_periode_tahun').val(parts[0]);
+              $('#bayar_periode_bulan').val(parts[1]);
+              $('#bayar_masa_pajak').val(parts[0] + '-' + parts[1]);
+        }
+        syncBayarPeriode();
+  });
+
+  // --- Generate Hutang Pajak (panggil sp_GenerateHutangPPhFinal) ---
+  $('#btn-generate-lanjut').on('click', function () {
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Memproses...');
+        $.ajax({
+              url: "{{ route('generate.hutang.pajak') }}",
+              type: 'POST',
+              headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+        })
+        .done(function (res) {
+              $('#modalGenerate').modal('hide');
+              tableBelum.ajax.reload(null, false);
+              tableSudah.ajax.reload(null, false);
+              if (res && res.added > 0) {
+                    alert('Generate selesai. ' + res.added + ' hutang pajak baru dibuat.');
+              } else {
+                    alert('Generate selesai. Tidak ada hutang pajak baru yang perlu dibuat.');
+              }
+        })
+        .fail(function () {
+              alert('Gagal generate hutang pajak. Coba lagi.');
+        })
+        .always(function () {
+              $btn.prop('disabled', false).html('<i class="bi bi-play-circle"></i> Lanjutkan');
+        });
   });
 
   $('#example2 tbody').on('click', '.edit-data', function () {

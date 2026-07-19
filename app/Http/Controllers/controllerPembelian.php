@@ -231,6 +231,10 @@ class controllerPembelian extends Controller
                     SET qty = ?, diskon1 = ?, total = ?
                     WHERE no_transaksi = ? AND kd_barang = ? AND kd_satuan = ?",
                     [$qty, $diskon, $total, $no_transaksi, $kd_barang, $kd_satuan]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Detail pembelian berhasil diperbarui.']);
+        }
         return redirect()->route('index.pembelian');
     }
 }

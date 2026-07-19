@@ -210,9 +210,13 @@ class controllerPenjualan extends Controller
         $qty = $request->qty;
         $diskon = $request->diskon;
 
-        DB::update("UPDATE t_penjualan_detail 
+        DB::update("UPDATE t_penjualan_detail
                             SET qty=?, diskon=?
                            WHERE no_transaksi=? AND kd_barang=? AND kd_satuan=?", ["$qty", "$diskon", "$no_transaksi", "$kd_barang", "$kd_satuan"]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Detail penjualan berhasil diperbarui.']);
+        }
         return redirect()->route('index.penjualan');
     }
 }

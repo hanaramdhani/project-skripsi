@@ -82,6 +82,8 @@ Route::middleware('auth.user')->group(function () {
     Route::post('/edit-pembayaran-pajak', [controllerPembayaranPajak::class, 'editPembayaranPajak'])->name('edit.pembayaran.pajak');
     Route::post('/hapus-pembayaran-pajak', [controllerPembayaranPajak::class, 'hapusPembayaranPajak'])->name('hapus.pembayaran.pajak');
     Route::get('/cek-hutang-pajak', [controllerPembayaranPajak::class, 'cekHutangPajak'])->name('cek.hutang.pajak');
+    Route::get('/data-hutang-pajak', [controllerPembayaranPajak::class, 'getDataHutangPajak'])->name('data.hutang.pajak.list');
+    Route::post('/generate-hutang-pajak', [controllerPembayaranPajak::class, 'generateHutangPajak'])->name('generate.hutang.pajak');
 
     // m_barang
     Route::get('/barang', [controllerBarang::class,'viewMasterBarang'])->name('index.master.barang');

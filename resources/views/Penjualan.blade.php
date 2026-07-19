@@ -511,6 +511,17 @@ $(document).ready(function () {
 
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
+  function formatRupiah(value) {
+    const num = Number(value);
+    if (isNaN(num)) return value;
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function formatQty(value) {
+    const num = Number(value);
+    if (isNaN(num)) return value;
+    return num.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+  }
+
   const table = $('#example2').DataTable({
     processing: true,
     serverSide: true,
@@ -564,95 +575,129 @@ $(document).ready(function () {
   });
 
 
+    // Build & render the detail child row for a transaction
+    function loadDetailPenjualan(row, tr, btn) {
+      const noTransaksi = tr.data('notransaksi');
+      return $.ajax({
+        url: '/detail-penjualan',
+        type: 'GET',
+        data: { no_transaksi: noTransaksi },
+        success: function (response) {
+          let detailRows = response.dataDetail.map(function (item) {
+            return `
+              <tr>
+                <td>${item.barang}</td>
+                <td class="text-center">${item.satuan}</td>
+                <td class="text-right">${formatQty(item.qty)}</td>
+                <td class="text-right">${formatRupiah(item.harga_jual)}</td>
+                <td class="text-right">${formatRupiah(item.diskon)}</td>
+                <td class="text-center">
+                  <button class="btn btn-warning btn-sm edit_detail"
+                  data-diskon="${item.diskon}"
+                  data-qty="${item.qty}"
+                  data-transaksi="${noTransaksi}"
+                  data-kd_barang="${item.kd_barang}"
+                  data-barang="${item.barang}"
+                  data-kd_satuan="${item.kd_satuan}"
+                  data-satuan="${item.satuan}"
+                  type="button"
+                  data-toggle="modal"
+                  data-target="#exampleModal">
+                  <i class="bi bi-pencil"></i> Edit</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          const childHtml = `
+            <div class="detail-child p-3">
+              <div class="card shadow-sm border-0 mb-0">
+                <div class="card-header bg-primary text-white py-2 d-flex align-items-center">
+                  <i class="bi bi-receipt mr-2"></i>
+                  <strong>Detail Transaksi ${noTransaksi}</strong>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Barang</th>
+                        <th class="text-center">Satuan</th>
+                        <th class="text-right">Qty</th>
+                        <th class="text-right">Harga Jual</th>
+                        <th class="text-right">Diskon</th>
+                        <th class="text-center">#</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${detailRows}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+
+          row.child(childHtml).show();
+          tr.addClass('shown');
+          if (btn) btn.html('<i class="bi bi-eye-slash"></i> Sembunyi');
+        },
+        error: function () {
+          alert('Gagal mengambil data detail.');
+        }
+      });
+    }
+
     $('#example2 tbody').on('click', '.toggle-child', function () {
       const tr = $(this).closest('tr');
       const row = table.row(tr);
+      const btn = $(this);
 
       if (row.child.isShown()) {
         row.child.hide();
         tr.removeClass('shown');
-        $(this).html('<i class="bi bi-eye"></i> Lihat');
+        btn.html('<i class="bi bi-eye"></i> Lihat');
       } else {
-        const price = 'Test 2';
-        const noTransaksi = tr.data('notransaksi');
-
-        $.ajax({
-          url: '/detail-penjualan', 
-          type: 'GET',
-          data: { no_transaksi: noTransaksi },
-          success: function (response) {
-            // Build a table for multiple detail rows
-            let detailRows = response.dataDetail.map(function (item) {
-              return `
-                <tr>
-                  <td>${item.barang}</td>
-                  <td>${item.satuan}</td>
-                  <td>${item.qty}</td>
-                  <td>${item.harga_jual}</td>
-                  <td>${item.diskon}</td>
-                  <td>
-                    <button class="btn btn-warning btn-xs edit_detail" 
-                    id="edit_detail" 
-                    data-diskon=${item.diskon} 
-                    data-qty=${item.qty} 
-                    data-transaksi=${noTransaksi} 
-                    data-kd_barang=${item.kd_barang} 
-                    data-barang='${item.barang}' 
-                    data-kd_satuan=${item.kd_satuan} 
-                    data-satuan=${item.satuan} 
-                    type="button" 
-                    data-toggle="modal" 
-                    data-target="#exampleModal">
-                    <i class="bi bi-pencil"></i>Edit</button>
-                  </td>
-                </tr>
-              `;
-            }).join('');
-
-            const childHtml = `
-              <table cellpadding="5" cellspacing="0" border="1" style="margin-left:1000px;">
-                <thead>
-                  <tr>
-                    <th>Barang</th>
-                    <th>Satuan</th>
-                    <th>Qty</th>
-                    <th>Harga Jual</th>
-                    <th>Diskon</th>
-                    <th>#</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${detailRows}
-                </tbody>
-              </table>
-            `;
-
-            row.child(childHtml).show();
-            tr.addClass('shown');
-            $(this).html('<i class="bi bi-eye-slash"></i> Sembunyi');
-          },
-          error: function () {
-            alert('Gagal mengambil data detail.');
-          }
-        });
+        loadDetailPenjualan(row, tr, btn);
       }
+    });
 
-      $('#example2 tbody').on('click', '.edit_detail', function () {
-        let barang = $(this).data('barang');
-        let satuan = $(this).data('satuan');
-        let kd_barang = $(this).data('kd_barang');
-        let kd_satuan = $(this).data('kd_satuan');
-        let no_transaksi = $(this).data('transaksi');
-        let diskon = $(this).data('diskon');
-        let qty = $(this).data('qty');
+    // Isi form modal saat tombol Edit diklik (delegated, tidak rebinding)
+    $('#example2 tbody').on('click', '.edit_detail', function () {
+      $('#dt_barang').val($(this).data('barang'));
+      $('#dt_satuan').val($(this).data('satuan'));
+      $('#dt_kd_barang').val($(this).data('kd_barang'));
+      $('#dt_kd_satuan').val($(this).data('kd_satuan'));
+      $('#dt_no_transaksi').val($(this).data('transaksi'));
+      $('#dt_diskon').val($(this).data('diskon'));
+      $('#dt_qty').val($(this).data('qty'));
+    });
 
-        $('#dt_barang').val(barang);
-        $('#dt_satuan').val(satuan);
-        $('#dt_kd_barang').val(kd_barang);
-        $('#dt_kd_satuan').val(kd_satuan);
-        $('#dt_no_transaksi').val(no_transaksi);
-        $('#dt_diskon').val(diskon);
-        $('#dt_qty').val(qty);
+    // Submit form edit via AJAX supaya halaman tidak reload & detail tetap terbuka
+    $('#frm-edit').on('submit', function (e) {
+      e.preventDefault();
+      const noTransaksi = $('#dt_no_transaksi').val();
+      const $btn = $(this).find('button[type="submit"]');
+      $btn.prop('disabled', true);
+
+      $.ajax({
+        url: $(this).attr('action'),
+        type: 'POST',
+        data: $(this).serialize(),
+        success: function () {
+          $('#exampleModal').modal('hide');
+          // Refresh hanya detail yang sedang terbuka, tanpa reload halaman
+          const tr = $('#example2 tbody tr.data-row[data-notransaksi="' + noTransaksi + '"]');
+          const row = table.row(tr);
+          if (row.node()) {
+            loadDetailPenjualan(row, tr, tr.find('.toggle-child'));
+          }
+        },
+        error: function () {
+          alert('Gagal menyimpan perubahan.');
+        },
+        complete: function () {
+          $btn.prop('disabled', false);
+        }
       });
     });
 </script>

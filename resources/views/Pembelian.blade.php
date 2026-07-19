@@ -382,6 +382,17 @@ $(document).ready(function () {
 
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
+  function formatRupiah(value) {
+    const num = Number(value);
+    if (isNaN(num)) return value;
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function formatQty(value) {
+    const num = Number(value);
+    if (isNaN(num)) return value;
+    return num.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+  }
+
   const table = $('#example2').DataTable({
     processing: true,
     serverSide: true,
@@ -430,19 +441,10 @@ $(document).ready(function () {
   });
   $('#filter_from, #filter_to').on('change', function () { table.ajax.reload(); });
 
-  $('#example2 tbody').on('click', '.toggle-child', function () {
-    const tr = $(this).closest('tr');
-    const row = table.row(tr);
-    const btn = $(this);
-
-    if (row.child.isShown()) {
-      row.child.hide();
-      tr.removeClass('shown');
-      btn.html('<i class="bi bi-eye"></i> Lihat');
-    } else {
-      const noTransaksi = tr.data('notransaksi');
-
-      $.ajax({
+  // Build & render the detail child row for a transaction
+  function loadDetailPembelian(row, tr, btn) {
+    const noTransaksi = tr.data('notransaksi');
+    return $.ajax({
         url: '/detail-pembelian',
         type: 'GET',
         data: { no_transaksi: noTransaksi },
@@ -451,13 +453,13 @@ $(document).ready(function () {
             return `
               <tr>
                 <td>${item.barang}</td>
-                <td>${item.satuan}</td>
-                <td>${item.qty}</td>
-                <td>${item.harga_beli}</td>
-                <td>${item.diskon}</td>
-                <td>${item.total}</td>
-                <td>
-                  <button class="btn btn-warning btn-xs edit_detail"
+                <td class="text-center">${item.satuan}</td>
+                <td class="text-right">${formatQty(item.qty)}</td>
+                <td class="text-right">${formatRupiah(item.harga_beli)}</td>
+                <td class="text-right">${formatRupiah(item.diskon)}</td>
+                <td class="text-right">${formatRupiah(item.total)}</td>
+                <td class="text-center">
+                  <button class="btn btn-warning btn-sm edit_detail"
                     data-diskon="${item.diskon}"
                     data-qty="${item.qty}"
                     data-transaksi="${noTransaksi}"
@@ -476,28 +478,51 @@ $(document).ready(function () {
           }).join('');
 
           const childHtml = `
-            <table cellpadding="5" cellspacing="0" border="1" style="margin-left:100px;">
-              <thead>
-                <tr>
-                  <th>Barang</th>
-                  <th>Satuan</th>
-                  <th>Qty</th>
-                  <th>Harga Beli</th>
-                  <th>Diskon</th>
-                  <th>Total</th>
-                  <th>#</th>
-                </tr>
-              </thead>
-              <tbody>${detailRows}</tbody>
-            </table>
+            <div class="detail-child p-3">
+              <div class="card shadow-sm border-0 mb-0">
+                <div class="card-header bg-primary text-white py-2 d-flex align-items-center">
+                  <i class="bi bi-bag-check mr-2"></i>
+                  <strong>Detail Transaksi ${noTransaksi}</strong>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Barang</th>
+                        <th class="text-center">Satuan</th>
+                        <th class="text-right">Qty</th>
+                        <th class="text-right">Harga Beli</th>
+                        <th class="text-right">Diskon</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-center">#</th>
+                      </tr>
+                    </thead>
+                    <tbody>${detailRows}</tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           `;
 
           row.child(childHtml).show();
           tr.addClass('shown');
-          btn.html('<i class="bi bi-eye-slash"></i> Sembunyi');
+          if (btn) btn.html('<i class="bi bi-eye-slash"></i> Sembunyi');
         },
         error: function () { alert('Gagal mengambil data detail.'); }
       });
+  }
+
+  $('#example2 tbody').on('click', '.toggle-child', function () {
+    const tr = $(this).closest('tr');
+    const row = table.row(tr);
+    const btn = $(this);
+
+    if (row.child.isShown()) {
+      row.child.hide();
+      tr.removeClass('shown');
+      btn.html('<i class="bi bi-eye"></i> Lihat');
+    } else {
+      loadDetailPembelian(row, tr, btn);
     }
   });
 
@@ -509,6 +534,35 @@ $(document).ready(function () {
     $('#dt_no_transaksi').val($(this).data('transaksi'));
     $('#dt_diskon').val($(this).data('diskon'));
     $('#dt_qty').val($(this).data('qty'));
+  });
+
+  // Submit form edit via AJAX supaya halaman tidak reload & detail tetap terbuka
+  $('#frm-edit').on('submit', function (e) {
+    e.preventDefault();
+    const noTransaksi = $('#dt_no_transaksi').val();
+    const $btn = $(this).find('button[type="submit"]');
+    $btn.prop('disabled', true);
+
+    $.ajax({
+      url: $(this).attr('action'),
+      type: 'POST',
+      data: $(this).serialize(),
+      success: function () {
+        $('#exampleModal').modal('hide');
+        // Refresh hanya detail yang sedang terbuka, tanpa reload halaman
+        const tr = $('#example2 tbody tr.data-row[data-notransaksi="' + noTransaksi + '"]');
+        const row = table.row(tr);
+        if (row.node()) {
+          loadDetailPembelian(row, tr, tr.find('.toggle-child'));
+        }
+      },
+      error: function () {
+        alert('Gagal menyimpan perubahan.');
+      },
+      complete: function () {
+        $btn.prop('disabled', false);
+      }
+    });
   });
 </script>
 
