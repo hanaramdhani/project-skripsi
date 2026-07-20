@@ -131,16 +131,28 @@ class controllerPembelian extends Controller
     {
         $keyword = $request->q;
 
+        // Kolom harga_beli tidak ada di m_barang_satuan. Ambil harga beli terakhir
+        // dari transaksi pembelian sebelumnya (per barang + satuan) sebagai nilai
+        // default; tetap bisa diubah manual saat input pembelian.
         $dataBarangSatuan = DB::select("SELECT
                                 m_barang.kd_barang AS kd_barang,
                                 m_barang.nama AS barang,
                                 m_satuan.kd_satuan AS kd_satuan,
                                 m_satuan.nama AS satuan,
-                                m_barang_satuan.harga_beli AS harga_beli
+                                m_barang_satuan.harga_jual AS harga_jual,
+                                ISNULL((
+                                    SELECT TOP 1 d.harga_beli
+                                    FROM t_pembelian_detail d
+                                    INNER JOIN t_pembelian p ON d.no_transaksi = p.no_transaksi
+                                    WHERE d.kd_barang = m_barang_satuan.kd_barang
+                                      AND d.kd_satuan = m_barang_satuan.kd_satuan
+                                    ORDER BY p.tanggal DESC, p.no_transaksi DESC
+                                ), 0) AS harga_beli
                             FROM m_barang_satuan
                             INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
                             INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
                             WHERE m_barang.nama LIKE ? ORDER BY m_barang.nama", ["%$keyword%"]);
+
         return response()->json(['dataBarangSatuan' => $dataBarangSatuan]);
     }
 
@@ -170,7 +182,6 @@ class controllerPembelian extends Controller
                      $masterDiskon, $pajak, $ppnbm, $keterangan, $kd_user]);
 
         $products = $request->products ?? [];
-        $nomor = 1;
         foreach ($products as $product) {
             $kd_barang  = $product['kd_barang'];
             $kd_satuan  = $product['kd_satuan'];
@@ -179,14 +190,14 @@ class controllerPembelian extends Controller
             $diskon_dt  = (float) ($product['diskon_dt'] ?? 0);
             $total      = ($qty * $harga_beli) - ($diskon_dt * $qty);
 
+            // Kolom "nomor" adalah IDENTITY (auto-increment), jadi tidak di-insert manual.
             DB::insert("INSERT INTO t_pembelian_detail
                         (no_transaksi, kd_barang, kd_satuan, jenis, qty, harga_beli,
-                         diskon1, diskon2, diskon3, diskon4, point1, nomor, total)
+                         diskon1, diskon2, diskon3, diskon4, point1, total)
                         VALUES
-                        (?, ?, ?, 1, ?, ?, ?, 0, 0, 0, 0, ?, ?)",
+                        (?, ?, ?, 1, ?, ?, ?, 0, 0, 0, 0, ?)",
                         [$no_transaksi, $kd_barang, $kd_satuan, $qty, $harga_beli,
-                         $diskon_dt, $nomor, $total]);
-            $nomor++;
+                         $diskon_dt, $total]);
         }
         return redirect()->route('index.pembelian');
     }
@@ -234,6 +245,29 @@ class controllerPembelian extends Controller
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Detail pembelian berhasil diperbarui.']);
+        }
+        return redirect()->route('index.pembelian');
+    }
+
+    public function hapusPembelian(Request $request)
+    {
+        $no_transaksi = $request->no_transaksi;
+
+        if (empty($no_transaksi)) {
+            return response()->json(['success' => false, 'message' => 'No. transaksi tidak valid.'], 422);
+        }
+
+        try {
+            DB::transaction(function () use ($no_transaksi) {
+                DB::delete("DELETE FROM t_pembelian_detail WHERE no_transaksi = ?", [$no_transaksi]);
+                DB::delete("DELETE FROM t_pembelian WHERE no_transaksi = ?", [$no_transaksi]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus transaksi.'], 500);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Transaksi pembelian berhasil dihapus.']);
         }
         return redirect()->route('index.pembelian');
     }

@@ -92,14 +92,7 @@
                               </div>
                               <div class="form-group">
                                 <label class="col-form-label">Jenis Pajak</label>
-                                <select name="edit_jenis_pajak" class="form-control" id="edit_jenis_pajak" required>
-                                  <option value="PPh 21">PPh 21</option>
-                                  <option value="PPh 22">PPh 22</option>
-                                  <option value="PPh 23">PPh 23</option>
-                                  <option value="PPh 25">PPh 25</option>
-                                  <option value="PPh 4 ayat 2">PPh 4 ayat 2</option>
-                                  <option value="PPN">PPN</option>
-                                </select>
+                                <input type="text" name="edit_jenis_pajak" class="form-control" id="edit_jenis_pajak" readonly required>
                               </div>
                               <div class="form-group">
                                 <label class="col-form-label">Periode</label>

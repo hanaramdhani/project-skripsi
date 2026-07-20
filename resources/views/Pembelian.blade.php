@@ -423,8 +423,9 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         className: 'text-center',
-        render: function () {
-          return '<button type="button" class="btn btn-xs btn-primary toggle-child"><i class="bi bi-eye"></i> Lihat</button>';
+        render: function (data, type, row) {
+          return '<button type="button" class="btn btn-xs btn-primary toggle-child"><i class="bi bi-eye"></i> Lihat</button> '
+               + '<button type="button" class="btn btn-xs btn-danger hapus-transaksi" data-notransaksi="' + row.no_transaksi + '"><i class="bi bi-trash"></i> Hapus</button>';
         }
       }
     ],
@@ -524,6 +525,33 @@ $(document).ready(function () {
     } else {
       loadDetailPembelian(row, tr, btn);
     }
+  });
+
+  // Hapus transaksi pembelian (header + detail) via AJAX
+  $('#example2 tbody').on('click', '.hapus-transaksi', function () {
+    const noTransaksi = $(this).data('notransaksi');
+    if (!confirm('Hapus transaksi ' + noTransaksi + ' beserta seluruh detailnya? Tindakan ini tidak dapat dibatalkan.')) {
+      return;
+    }
+    const $btn = $(this);
+    $btn.prop('disabled', true);
+    $.ajax({
+      url: "{{ route('hapus.pembelian') }}",
+      type: 'POST',
+      data: { no_transaksi: noTransaksi, _token: '{{ csrf_token() }}' },
+      success: function (res) {
+        if (res && res.success === false) {
+          alert(res.message || 'Gagal menghapus transaksi.');
+          $btn.prop('disabled', false);
+          return;
+        }
+        table.ajax.reload(null, false);
+      },
+      error: function () {
+        alert('Gagal menghapus transaksi.');
+        $btn.prop('disabled', false);
+      }
+    });
   });
 
   $('#example2 tbody').on('click', '.edit_detail', function () {

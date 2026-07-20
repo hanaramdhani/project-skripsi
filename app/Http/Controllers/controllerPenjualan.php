@@ -219,4 +219,27 @@ class controllerPenjualan extends Controller
         }
         return redirect()->route('index.penjualan');
     }
+
+    public function hapusPenjualan(Request $request)
+    {
+        $no_transaksi = $request->no_transaksi;
+
+        if (empty($no_transaksi)) {
+            return response()->json(['success' => false, 'message' => 'No. transaksi tidak valid.'], 422);
+        }
+
+        try {
+            DB::transaction(function () use ($no_transaksi) {
+                DB::delete("DELETE FROM t_penjualan_detail WHERE no_transaksi = ?", [$no_transaksi]);
+                DB::delete("DELETE FROM t_penjualan WHERE no_transaksi = ?", [$no_transaksi]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus transaksi.'], 500);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Transaksi penjualan berhasil dihapus.']);
+        }
+        return redirect()->route('index.penjualan');
+    }
 }

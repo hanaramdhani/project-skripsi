@@ -66,6 +66,7 @@ Route::middleware('auth.user')->group(function () {
     Route::post('/edit-penjualan', [controllerPenjualan::class, 'editPenjualan'])->name('edit.penjualan');
     Route::get('/detail-penjualan', [controllerPenjualan::class,'getDetailPenjualan']);
     Route::get('/data-penjualan', [controllerPenjualan::class,'getDataPenjualan'])->name('data.penjualan');
+    Route::post('/hapus-penjualan', [controllerPenjualan::class, 'hapusPenjualan'])->name('hapus.penjualan');
 
     // pembelian
     Route::get('/pembelian', [controllerPembelian::class,'viewPembelian'])->name('index.pembelian');
@@ -74,6 +75,7 @@ Route::middleware('auth.user')->group(function () {
     Route::post('/edit-pembelian', [controllerPembelian::class, 'editPembelian'])->name('edit.pembelian');
     Route::get('/detail-pembelian', [controllerPembelian::class,'getDetailPembelian']);
     Route::get('/data-pembelian', [controllerPembelian::class,'getDataPembelian'])->name('data.pembelian');
+    Route::post('/hapus-pembelian', [controllerPembelian::class, 'hapusPembelian'])->name('hapus.pembelian');
 
     // pembayaran pajak
     Route::get('/pembayaran-pajak', [controllerPembayaranPajak::class,'viewPembayaranPajak'])->name('index.pembayaran.pajak');
