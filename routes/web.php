@@ -62,6 +62,7 @@ Route::middleware('auth.user')->group(function () {
     // penjualan
     Route::get('/penjualan', [controllerPenjualan::class,'viewPenjualan'])->name('index.penjualan');
     Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
+    Route::get('/barang-by-barcode-jual', [controllerPenjualan::class,'getBarangByBarcode']);
     Route::post('/input-penjualan', [controllerPenjualan::class, 'inputPenjualan'])->name('input.penjualan');
     Route::post('/edit-penjualan', [controllerPenjualan::class, 'editPenjualan'])->name('edit.penjualan');
     Route::get('/detail-penjualan', [controllerPenjualan::class,'getDetailPenjualan']);
@@ -71,6 +72,7 @@ Route::middleware('auth.user')->group(function () {
     // pembelian
     Route::get('/pembelian', [controllerPembelian::class,'viewPembelian'])->name('index.pembelian');
     Route::get('/products-list-beli', [controllerPembelian::class,'getBarangSatuanBeli']);
+    Route::get('/barang-by-barcode-beli', [controllerPembelian::class,'getBarangByBarcode']);
     Route::post('/input-pembelian', [controllerPembelian::class, 'inputPembelian'])->name('input.pembelian');
     Route::post('/edit-pembelian', [controllerPembelian::class, 'editPembelian'])->name('edit.pembelian');
     Route::get('/detail-pembelian', [controllerPembelian::class,'getDetailPembelian']);

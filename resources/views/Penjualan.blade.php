@@ -261,6 +261,7 @@
                                 <label class="col-sm-3 col-form-label"><strong>Pilih Barang</strong></label>
                                 <div class="col-sm-9">
                                   <select class="form-control form-control-lg" id="productSelect"></select>
+                                  <small id="barcodeMsg" class="text-danger" style="display:none;"></small>
                                 </div>
                               </div>
                             </div>
@@ -294,6 +295,19 @@
                             </thead>
                             <tbody></tbody>
                           </table>
+                        </div>
+                      </div>
+
+                      <!-- Modal pilih satuan (barcode dengan >1 satuan) -->
+                      <div class="modal fade" id="satuanPickerModal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h5 class="modal-title">Pilih Satuan — <span id="satuanPickerBarang"></span></h5>
+                              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div class="modal-body" id="satuanPickerBody"></div>
+                          </div>
                         </div>
                       </div>
 
@@ -440,8 +454,8 @@ $(document).ready(function () {
         }
     });
 
-    $('#productSelect').on('select2:select', function (e) {
-        const data = e.params.data;
+    // Tambah 1 baris barang ke tabel. data: {barang, satuan, kd_barang, kd_satuan, harga}
+    function addProductRow(data) {
         let html = `
             <tr>
                 <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
@@ -459,7 +473,96 @@ $(document).ready(function () {
 
         $('#productTable tbody').append(html);
         rowCount++;
+    }
+
+    // Ubah baris respons server -> bentuk yang dipakai addProductRow
+    function mapServerItem(item) {
+        return {
+            barang: item.barang,
+            satuan: item.satuan,
+            kd_barang: item.kd_barang,
+            kd_satuan: item.kd_satuan,
+            harga: item.harga_jual
+        };
+    }
+
+    $('#productSelect').on('select2:select', function (e) {
+        addProductRow(e.params.data);
+        $('#productSelect').val(null).trigger('change');
     });
+
+    // ===== SCAN BARCODE (lewat kolom pencarian select2) =====
+    const BARCODE_URL = '/barang-by-barcode-jual';
+
+    function showBarcodeMsg(text) {
+        $('#barcodeMsg').text(text).show();
+        setTimeout(function () { $('#barcodeMsg').fadeOut(); }, 2500);
+    }
+
+    function openPicker() {
+        try { $('#productSelect').select2('open'); } catch (e) {}
+    }
+
+    // Tampilkan pilihan satuan kalau 1 barcode punya >1 satuan
+    function showSatuanPicker(rows) {
+        $('#satuanPickerBarang').text(rows[0].barang);
+        let body = '<div class="list-group">';
+        rows.forEach(function (item, i) {
+            body += `
+                <button type="button" class="list-group-item list-group-item-action pick-satuan" data-idx="${i}">
+                    <strong>${item.satuan}</strong>
+                    <span class="float-right text-muted">Harga jual: ${formatRupiah(item.harga_jual)}</span>
+                </button>`;
+        });
+        body += '</div>';
+        $('#satuanPickerBody').html(body).data('rows', rows);
+        $('#satuanPickerModal').modal('show');
+    }
+
+    $('#satuanPickerBody').on('click', '.pick-satuan', function () {
+        const rows = $('#satuanPickerBody').data('rows') || [];
+        const item = rows[$(this).data('idx')];
+        if (item) addProductRow(mapServerItem(item));
+        $('#satuanPickerModal').modal('hide');
+    });
+    $('#satuanPickerModal').on('hidden.bs.modal', function () { openPicker(); });
+
+    // Proses kode barcode hasil scan
+    function handleBarcode(term, field) {
+        $.getJSON(BARCODE_URL, { barcode: term }, function (res) {
+            const rows = (res && res.dataBarangSatuan) ? res.dataBarangSatuan : [];
+            if (rows.length === 1) {
+                addProductRow(mapServerItem(rows[0]));
+                $('#productSelect').val(null).trigger('change');
+                $('#productSelect').select2('close');
+                setTimeout(openPicker, 60);
+            } else if (rows.length > 1) {
+                $('#productSelect').select2('close');
+                showSatuanPicker(rows);
+            } else {
+                showBarcodeMsg('Barcode "' + term + '" tidak ditemukan.');
+                if (field) field.value = '';
+            }
+        }).fail(function () { showBarcodeMsg('Gagal mencari barcode.'); });
+    }
+
+    // Intercept Enter di kolom pencarian select2 (angka -> barcode, teks -> select2 biasa)
+    const BARCODE_RE = /^\+?\d{6,}$/;
+    $('#productSelect').on('select2:open', function () {
+        const field = document.querySelector('.select2-container--open .select2-search__field');
+        if (!field || field.dataset.barcodeBound) return;
+        field.dataset.barcodeBound = '1';
+        field.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.keyCode !== 13) return;
+            const term = field.value.trim();
+            if (!term || !BARCODE_RE.test(term)) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            handleBarcode(term, field);
+        }, true);
+    });
+
+    $('a[href="#settings"]').on('shown.bs.tab', function () { openPicker(); });
 
     // Recalculate row + grand total when qty or diskon changes
     $('#productTable').on('input', '.qty, .diskon_dt', function () {

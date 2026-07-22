@@ -124,7 +124,7 @@ class controllerPenjualan extends Controller
     public function getBarangSatuan(Request $request){
         $keyword = $request->q; // assuming you're passing ?q=keyword
 
-        $dataBarangSatuan = DB::select("SELECT 
+        $dataBarangSatuan = DB::select("SELECT TOP 10
                                 m_barang.kd_barang AS kd_barang,
                                 m_barang.nama AS barang,
                                 m_satuan.kd_satuan AS kd_satuan,
@@ -133,7 +133,27 @@ class controllerPenjualan extends Controller
                             FROM m_barang_satuan
                             INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
                             INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
-                            WHERE m_barang.nama LIKE ? ORDER BY m_barang.nama", ["%$keyword%"]);
+                            WHERE (m_barang.nama LIKE ? OR m_barang.kd_barang LIKE ?)
+                            ORDER BY m_barang.nama", ["%$keyword%", "%$keyword%"]);
+        return response()->json(['dataBarangSatuan'=>$dataBarangSatuan]);
+    }
+
+    // Lookup barang berdasarkan barcode (kd_barang) exact match untuk input scan.
+    // 1 barcode bisa mengembalikan beberapa baris kalau barang punya banyak satuan.
+    public function getBarangByBarcode(Request $request){
+        $barcode = trim($request->barcode);
+
+        $dataBarangSatuan = DB::select("SELECT
+                                m_barang.kd_barang AS kd_barang,
+                                m_barang.nama AS barang,
+                                m_satuan.kd_satuan AS kd_satuan,
+                                m_satuan.nama AS satuan,
+                                m_barang_satuan.harga_jual AS harga_jual
+                            FROM m_barang_satuan
+                            INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
+                            INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
+                            WHERE m_barang.kd_barang = ?
+                            ORDER BY m_barang_satuan.jumlah", [$barcode]);
         return response()->json(['dataBarangSatuan'=>$dataBarangSatuan]);
     }
 

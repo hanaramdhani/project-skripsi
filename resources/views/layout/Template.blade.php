@@ -306,7 +306,7 @@
                     <li class="nav-item">
                       <a href="{{ url('barang-satuan') }}" class="nav-link {{ request()->is('barang-satuan') ? 'active' : '' }}">
                         <i class="far fa-circle nav-icon"></i>
-                        <p>Satuan</p>
+                        <p>Barang Satuan</p>
                       </a>
                     </li>
                     <li class="nav-item">
@@ -410,12 +410,12 @@
                         <p>Laporan Neraca</p>
                       </a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                       <a href="{{ url('laporan-arus-kas') }}" class="nav-link {{ request()->is('laporan-arus-kas') ? 'active' : '' }}">
                         <i class="far fa-circle nav-icon"></i>
                         <p>Laporan Arus Kas</p>
                       </a>
-                    </li>
+                    </li> -->
                   </ul>
                 </li>
 
