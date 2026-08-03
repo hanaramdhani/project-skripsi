@@ -196,6 +196,65 @@ class LaporanController extends Controller
     }
 
     // =====================================================================
+    // Laporan Stok (server-side DataTables dari view v_stok_barang)
+    // =====================================================================
+
+    public function viewLaporanStok()
+    {
+        return view('LaporanStok');
+    }
+
+    public function getDataLaporanStok(Request $request)
+    {
+        $draw   = (int) $request->input('draw', 1);
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        $search = $request->input('search.value', '');
+
+        $orderColumnIndex = (int) $request->input('order.0.column', 1);
+        $orderDir = strtolower($request->input('order.0.dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
+        $columnsMap = [
+            0 => 'kd_barang',
+            1 => 'nama',
+            2 => 'stok',
+            3 => 'satuan_terkecil',
+        ];
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'nama';
+
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        $where = [];
+        $bindings = [];
+        if (!empty($search)) {
+            $where[] = "(kd_barang LIKE ? OR nama LIKE ? OR satuan_terkecil LIKE ?)";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+            $bindings[] = "%$search%";
+        }
+        $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM v_stok_barang")[0]->c;
+        $recordsFiltered = DB::select("SELECT COUNT(*) AS c FROM v_stok_barang $whereSql", $bindings)[0]->c;
+
+        $sql = "SELECT kd_barang, nama, stok, satuan_terkecil
+                FROM v_stok_barang
+                $whereSql
+                ORDER BY $orderColumn $orderDir
+                OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
+
+        $data = DB::select($sql, $bindings);
+
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+        ]);
+    }
+
+    // =====================================================================
     // Export Excel (multi-laporan dalam 1 file, 1 sheet per laporan)
     // =====================================================================
 

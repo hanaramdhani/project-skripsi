@@ -419,6 +419,14 @@
                   </ul>
                 </li>
 
+                <!-- Laporan Stok -->
+                <li class="nav-item">
+                  <a href="{{ url('laporan-stok') }}" class="nav-link {{ request()->is('laporan-stok') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-boxes"></i>
+                    <p>Laporan Stok</p>
+                  </a>
+                </li>
+
                 <li class="nav-header">LABELS</li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">

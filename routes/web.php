@@ -193,6 +193,10 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/laporan-neraca', [LaporanController::class,'viewLaporanNeraca'])->name('index.laporan.neraca');
     Route::get('/laporan-arus-kas', [LaporanController::class,'viewLaporanArusKas'])->name('index.laporan.arus.kas');
 
+    // Laporan Stok
+    Route::get('/laporan-stok', [LaporanController::class,'viewLaporanStok'])->name('index.laporan.stok');
+    Route::get('/data-laporan-stok', [LaporanController::class,'getDataLaporanStok'])->name('data.laporan.stok');
+
     // Export Excel laporan keuangan (multi-laporan dalam 1 file)
     Route::get('/laporan/export', [LaporanController::class,'export'])->name('laporan.export');
 
