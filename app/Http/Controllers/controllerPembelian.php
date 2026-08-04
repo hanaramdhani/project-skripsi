@@ -192,6 +192,7 @@ class controllerPembelian extends Controller
         $no_transaksi        = $request->no_transaksi;
         $kd_supplier         = $request->kd_supplier;
         $no_order            = $request->no_order ?: '-';
+        $tanggal             = $request->tanggal ?: date('Y-m-d');
         $tanggal_jatuh_tempo = $request->tanggal_jatuh_tempo;
         $masterDiskon        = (float) ($request->masterDiskon ?? 0);
         $pajak               = (float) ($request->pajak ?? 0);
@@ -206,10 +207,10 @@ class controllerPembelian extends Controller
                      keterangan, kd_user, tanggal_server)
                     VALUES
                     (?, ?, 'DAA000', 'JAA000', 'KAA001', ?,
-                     GETDATE(), ?, 1,
+                     ?, ?, 1,
                      ?, 0, 0, 0, ?, ?,
                      ?, ?, GETDATE())",
-                    [$no_transaksi, $kd_supplier, $no_order, $tanggal_jatuh_tempo,
+                    [$no_transaksi, $kd_supplier, $no_order, $tanggal, $tanggal_jatuh_tempo,
                      $masterDiskon, $pajak, $ppnbm, $keterangan, $kd_user]);
 
         $products = $request->products ?? [];

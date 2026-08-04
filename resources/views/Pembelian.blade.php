@@ -124,7 +124,7 @@
                               <div class="form-group row mb-2">
                                 <label class="col-sm-4 col-form-label"><strong>Tanggal</strong></label>
                                 <div class="col-sm-8">
-                                  <input type="text" class="form-control" value="{{ date('d/m/Y') }}" readonly>
+                                  <input type="date" class="form-control" name="tanggal" id="tanggal" value="{{ date('Y-m-d') }}" required>
                                 </div>
                               </div>
                               <div class="form-group row mb-2">

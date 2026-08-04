@@ -163,13 +163,14 @@ class controllerPenjualan extends Controller
         $kd_customer = $request->kd_customer;
         $kd_pegawai = $request->kd_pegawai;
         $masterDiskon = $request->masterDiskon;
+        $tanggal = $request->tanggal ?: date('Y-m-d');
 
 
         DB::insert("INSERT INTO t_penjualan
         (no_transaksi, kd_customer, kd_divisi,kd_jenis, kd_kas, tanggal, diskon, keterangan, status,kd_voucher,no_bukti,tanggal_jatuh_tempo)
         VALUES
-        (?, ?, 1, '-', '-', GETDATE(), ?, '-', 1, 'KAA000', '-', DATEADD(DAY, 7, GETDATE()))
-        ", [$no_transaksi, $kd_customer, $masterDiskon]);
+        (?, ?, 1, '-', '-', ?, ?, '-', 1, 'KAA000', '-', DATEADD(DAY, 7, ?))
+        ", [$no_transaksi, $kd_customer, $tanggal, $masterDiskon, $tanggal]);
 
         $products = $request->products;
 
