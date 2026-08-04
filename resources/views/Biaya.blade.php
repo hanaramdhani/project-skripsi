@@ -44,7 +44,6 @@
                           <th class="text-center">NAMA</th>
                           <th class="text-center">STATUS</th>
                           <th class="text-center">KETERANGAN</th>
-                          <th class="text-center">AKUN</th>
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
@@ -85,12 +84,6 @@
                                     <option value="1">Aktif</option>
                                     <option value="0">Tidak Aktif</option>
                                 </select>
-                              </div>
-                              <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Akun</label>
-                                <select class="form-control" name="edit_kd_akun" id="edit_kd_akun" required>
-                                </select>
-                                <!-- <input type="text" name="edit_kdjabatan_pegawai" id="edit_kdJabatan_pegawai"> -->
                               </div>
                           </div>
                           <div class="modal-footer">
@@ -159,19 +152,6 @@
                             </select>
                         </div>
                       </div>
-                      <div class="form-group row">
-                        <label for="inputName2" class="col-sm-2 col-form-label">Akun</label>
-                        <div class="col-sm-5">
-                          <select class="form-control" name="kd_akun" id="kd_akun">
-                          <?php
-                            foreach ($akun as $key => $value) {
-                              echo '<option value="'.$value->kd_akun.'">'.$value->akun.'</option>';
-                            };
-                          ?>
-                          </select>
-                        </div>
-                      </div>
-
                        <button type="submit" class="btn btn-success text-right"><i class="bi bi-save"></i>Simpan</button>
                     </form>
 
@@ -228,7 +208,6 @@
       { data: 'biaya', className: 'text-center' },
       { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
       { data: 'keterangan', className: 'text-center' },
-      { data: 'akun', className: 'text-center' },
       { data: null, className: 'text-center', orderable: false, searchable: false,
         render: function () {
           return '<button type="button" class="btn btn-xs btn-warning edit-data" data-toggle="modal" data-target="#modalEdit"><i class="bi bi-pencil"></i>Edit</button> ' +
@@ -245,25 +224,10 @@
 
   $('#example2 tbody').on('click', '.edit-data', function () {
         let row = getRowData(this);
-        let kd_akun = row.kd_akun;
         $('#edit_kd_biaya').val(row.kd_biaya);
         $('#edit_nama_biaya').val(row.biaya);
         $('#edit_status_biaya').val(row.status);
         $('#edit_keterangan_biaya').val(row.keterangan);
-        $('#edit_kd_akun').empty();
-
-        $.ajax({
-            url: '/get-akun-biaya',
-            type: 'GET',
-            success: function (response) {
-                response.akun.forEach(function (item) {
-                    let selected = item.kd_akun == kd_akun ? 'selected' : '';
-                    $('#edit_kd_akun').append(
-                        `<option value="${item.kd_akun}" ${selected}>${item.nama}</option>`
-                    );
-                });
-            }
-        });
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {

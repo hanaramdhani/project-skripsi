@@ -14,11 +14,7 @@ class controllerPendapatan extends Controller
         $incremented = str_pad((int)$kd_ak + 1, 3, '0', STR_PAD_LEFT);
         $kd_pendapatan = 'PAA' . $incremented;
 
-        $akun = DB::select("SELECT 
-                                kd_akun, 
-                                nama AS akun
-                            FROM m_akun WHERE [status]=1");
-        return view('pendapatan', ['kd_pendapatan' => $kd_pendapatan, 'akun' => $akun]);
+        return view('pendapatan', ['kd_pendapatan' => $kd_pendapatan]);
     }
 
     public function getDataPendapatan(Request $request)
@@ -31,21 +27,20 @@ class controllerPendapatan extends Controller
         $orderColumnIndex = (int) $request->input('order.0.column', 0);
         $orderDir = strtolower($request->input('order.0.dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
         $columnsMap = [
-            0 => 'm_pendapatan.kd_pendapatan',
-            1 => 'm_pendapatan.nama',
-            2 => 'm_pendapatan.[status]',
-            3 => 'm_pendapatan.keterangan',
-            4 => 'm_akun.nama',
+            0 => 'kd_pendapatan',
+            1 => 'nama',
+            2 => '[status]',
+            3 => 'keterangan',
         ];
-        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'm_pendapatan.kd_pendapatan';
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'kd_pendapatan';
         if ($length <= 0) { $length = 10; }
 
-        $from = "FROM m_pendapatan INNER JOIN m_akun ON m_pendapatan.kd_akun = m_akun.kd_akun";
+        $from = "FROM m_pendapatan";
 
         $where = []; $bindings = [];
         if (!empty($search)) {
-            $where[] = "(m_pendapatan.kd_pendapatan LIKE ? OR m_pendapatan.nama LIKE ? OR m_pendapatan.keterangan LIKE ? OR m_akun.nama LIKE ?)";
-            $bindings[] = "%$search%"; $bindings[] = "%$search%"; $bindings[] = "%$search%"; $bindings[] = "%$search%";
+            $where[] = "(kd_pendapatan LIKE ? OR nama LIKE ? OR keterangan LIKE ?)";
+            $bindings[] = "%$search%"; $bindings[] = "%$search%"; $bindings[] = "%$search%";
         }
         $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
 
@@ -53,12 +48,10 @@ class controllerPendapatan extends Controller
         $recordsFiltered = DB::select("SELECT COUNT(*) AS c $from $whereSql", $bindings)[0]->c;
 
         $sql = "SELECT
-                    m_pendapatan.kd_pendapatan AS kd_pendapatan,
-                    m_pendapatan.nama AS pendapatan,
-                    m_pendapatan.[status] AS [status],
-                    m_pendapatan.keterangan AS keterangan,
-                    m_akun.kd_akun AS kd_akun,
-                    m_akun.nama AS akun
+                    kd_pendapatan,
+                    nama AS pendapatan,
+                    [status],
+                    keterangan
                 $from $whereSql
                 ORDER BY $orderColumn $orderDir
                 OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
@@ -76,18 +69,11 @@ class controllerPendapatan extends Controller
         $nama = $request->nama;
         $keterangan = $request->keterangan;
         $status = $request->status;
-        $kd_akun = $request->kd_akun;
 
         DB::insert("INSERT INTO m_pendapatan
-                    (kd_pendapatan, kd_akun, nama, keterangan, [status])
-                    VALUES (?, ?, ?, ?, ?)", [$kd_pendapatan, $kd_akun, $nama, $keterangan, $status]);
+                    (kd_pendapatan, nama, keterangan, [status])
+                    VALUES (?, ?, ?, ?)", [$kd_pendapatan, $nama, $keterangan, $status]);
         return redirect()->route('index.master.pendapatan');
-    }
-
-    public function editGetAkun()
-    {
-        $akun = DB::select("SELECT kd_akun, nama FROM m_akun WHERE [status] = 1");
-        return response()->json(['akun' => $akun]);
     }
 
     public function editPendapatan(Request $request)
@@ -96,9 +82,8 @@ class controllerPendapatan extends Controller
         $nama = $request->edit_nama_pendapatan;
         $keterangan = $request->edit_keterangan_pendapatan;
         $status = $request->edit_status_pendapatan;
-        $kd_akun = $request->edit_kd_akun;
 
-        DB::update("UPDATE m_pendapatan SET kd_akun=?, nama=?, keterangan=?, [status]=? WHERE kd_pendapatan=?", [$kd_akun, $nama, $keterangan, $status, $kd_pendapatan]);
+        DB::update("UPDATE m_pendapatan SET nama=?, keterangan=?, [status]=? WHERE kd_pendapatan=?", [$nama, $keterangan, $status, $kd_pendapatan]);
         return redirect()->route('index.master.pendapatan');
     }
 

@@ -9,8 +9,8 @@ class controllerAkun extends Controller
 {
     public function viewMasterAkun()
     {
-        $kd_akun_temporary = DB::select("SELECT TOP 1 kd_akun FROM m_akun ORDER BY kd_akun DESC");
-        $kd_ak = substr($kd_akun_temporary[0]->kd_akun, -3);
+        $kd_akun_temporary = DB::select("SELECT TOP 1 coa_kode FROM m_coa ORDER BY coa_kode DESC");
+        $kd_ak = substr($kd_akun_temporary[0]->coa_kode, -3);
         $incremented = str_pad((int)$kd_ak + 1, 3, '0', STR_PAD_LEFT);
         $kd_akun = 'AAA' . $incremented;
         return view('akun', ['kd_akun' => $kd_akun]);
@@ -26,30 +26,29 @@ class controllerAkun extends Controller
         $orderColumnIndex = (int) $request->input('order.0.column', 0);
         $orderDir = strtolower($request->input('order.0.dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
         $columnsMap = [
-            0 => 'kd_akun',
-            1 => 'nama',
-            2 => 'status',
-            3 => 'keterangan',
+            0 => 'coa_kode',
+            1 => 'coa_nama',
+            2 => 'coa_tipe',
         ];
-        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'kd_akun';
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'coa_kode';
 
         if ($length <= 0) { $length = 10; }
 
         $where = [];
         $bindings = [];
         if (!empty($search)) {
-            $where[] = "(kd_akun LIKE ? OR nama LIKE ? OR keterangan LIKE ?)";
+            $where[] = "(coa_kode LIKE ? OR coa_nama LIKE ? OR coa_tipe LIKE ?)";
             $bindings[] = "%$search%";
             $bindings[] = "%$search%";
             $bindings[] = "%$search%";
         }
         $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-        $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM m_akun")[0]->c;
-        $recordsFiltered = DB::select("SELECT COUNT(*) AS c FROM m_akun $whereSql", $bindings)[0]->c;
+        $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM m_coa")[0]->c;
+        $recordsFiltered = DB::select("SELECT COUNT(*) AS c FROM m_coa $whereSql", $bindings)[0]->c;
 
-        $sql = "SELECT kd_akun, nama, [status] AS status, keterangan
-                FROM m_akun
+        $sql = "SELECT coa_kode AS kd_akun, coa_nama AS nama, coa_tipe AS tipe
+                FROM m_coa
                 $whereSql
                 ORDER BY $orderColumn $orderDir
                 OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
@@ -67,12 +66,11 @@ class controllerAkun extends Controller
     {
         $kd_akun = $request->kd_akun;
         $nama = $request->nama;
-        $keterangan = $request->keterangan;
-        $status = $request->status;
+        $tipe = $request->tipe;
 
-        DB::insert("INSERT INTO m_akun
-                    (kd_akun, nama, keterangan, [status])
-                    VALUES (?, ?, ?, ?)", [$kd_akun, $nama, $keterangan, $status]);
+        DB::insert("INSERT INTO m_coa
+                    (coa_kode, coa_nama, coa_tipe)
+                    VALUES (?, ?, ?)", [$kd_akun, $nama, $tipe]);
         return redirect()->route('index.master.akun');
     }
 
@@ -80,17 +78,16 @@ class controllerAkun extends Controller
     {
         $kd_akun = $request->edit_kd_akun;
         $nama = $request->edit_nama_akun;
-        $keterangan = $request->edit_keterangan_akun;
-        $status = $request->edit_status_akun;
+        $tipe = $request->edit_tipe_akun;
 
-        DB::update("UPDATE m_akun SET nama=?, keterangan=?, [status]=? WHERE kd_akun=?", [$nama, $keterangan, $status, $kd_akun]);
+        DB::update("UPDATE m_coa SET coa_nama=?, coa_tipe=? WHERE coa_kode=?", [$nama, $tipe, $kd_akun]);
         return redirect()->route('index.master.akun');
     }
 
     public function hapusAkun(Request $request)
     {
         $kd_akun = $request->hapus_kd_akun;
-        DB::delete("DELETE FROM m_akun WHERE kd_akun=?", [$kd_akun]);
+        DB::delete("DELETE FROM m_coa WHERE coa_kode=?", [$kd_akun]);
         return redirect()->route('index.master.akun');
     }
 }

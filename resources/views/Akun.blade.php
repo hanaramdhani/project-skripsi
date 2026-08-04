@@ -42,8 +42,7 @@
                       <tr>
                           <th class="text-center">KODE AKUN</th>
                           <th class="text-center">NAMA</th>
-                          <th class="text-center">STATUS</th>
-                          <th class="text-center">KETERANGAN</th>
+                          <th class="text-center">TIPE</th>
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
@@ -75,15 +74,8 @@
                                 <input name="edit_nama_akun" type="text" class="form-control" id="edit_nama_akun" required>
                               </div>
                               <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Keterangan</label>
-                                <input name="edit_keterangan_akun" type="text" class="form-control" id="edit_keterangan_akun" required>
-                              </div>
-                              <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Status</label>
-                                <select name="edit_status_akun" class="form-control" id="edit_status_akun" required>
-                                    <option value="1">Aktif</option>
-                                    <option value="0">Tidak Aktif</option>
-                                </select>
+                                <label for="recipient-name" class="col-form-label">Tipe Akun</label>
+                                <input name="edit_tipe_akun" type="text" class="form-control" id="edit_tipe_akun" required>
                               </div>
                           </div>
                           <div class="modal-footer">
@@ -138,18 +130,9 @@
                         </div>
                       </div>
                       <div class="form-group row">
-                        <label for="inputName2" class="col-sm-2 col-form-label">Keterangan</label>
+                        <label for="inputName2" class="col-sm-2 col-form-label">Tipe Akun</label>
                         <div class="col-sm-5">
-                          <input type="text" name="keterangan" id="keterangan" class="form-control" value="" required>
-                        </div>
-                      </div>
-                      <div class="form-group row">
-                        <label for="inputName2" class="col-sm-2 col-form-label">Status</label>
-                        <div class="col-sm-5">
-                            <select name="status" class="form-control" required>
-                                <option value="1">Aktif</option>
-                                <option value="0">Tidak Aktif</option>
-                            </select>
+                          <input type="text" name="tipe" id="tipe" class="form-control" value="" required>
                         </div>
                       </div>
 
@@ -210,8 +193,7 @@
     columns: [
       { data: 'kd_akun', className: 'text-center' },
       { data: 'nama', className: 'text-center' },
-      { data: 'status', className: 'text-center', render: function (d) { return d == 1 ? 'Aktif' : 'Tidak Aktif'; } },
-      { data: 'keterangan', className: 'text-center' },
+      { data: 'tipe', className: 'text-center' },
       {
         data: null, className: 'text-center', orderable: false, searchable: false,
         render: function () {
@@ -232,8 +214,7 @@
         let row = getRowData(this);
         $('#edit_kd_akun').val(row.kd_akun);
         $('#edit_nama_akun').val(row.nama);
-        $('#edit_status_akun').val(row.status);
-        $('#edit_keterangan_akun').val(row.keterangan);
+        $('#edit_tipe_akun').val(row.tipe);
   });
 
   $('#example2 tbody').on('click', '.hapus-data', function () {
