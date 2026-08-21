@@ -218,6 +218,7 @@ class LaporanController extends Controller
             1 => 'nama',
             2 => 'stok',
             3 => 'satuan_terkecil',
+            4 => 'harga_beli',
         ];
         $orderColumn = $columnsMap[$orderColumnIndex] ?? 'nama';
 
@@ -238,13 +239,17 @@ class LaporanController extends Controller
         $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM v_stok_barang")[0]->c;
         $recordsFiltered = DB::select("SELECT COUNT(*) AS c FROM v_stok_barang $whereSql", $bindings)[0]->c;
 
-        $sql = "SELECT kd_barang, nama, stok, satuan_terkecil
+        $sql = "SELECT kd_barang, nama, stok, satuan_terkecil, ROUND(harga_beli, 2) AS harga_beli
                 FROM v_stok_barang
                 $whereSql
                 ORDER BY $orderColumn $orderDir
                 OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
 
         $data = DB::select($sql, $bindings);
+
+        foreach ($data as $row) {
+            $row->harga_beli = (float) round((float) $row->harga_beli, 2);
+        }
 
         return response()->json([
             'draw'            => $draw,

@@ -38,6 +38,7 @@
                       <th class="text-center">Item</th>
                       <th class="text-center">Stok Akhir</th>
                       <th class="text-center">Satuan Terkecil</th>
+                      <th class="text-center">Harga Beli Terakhir</th>
                   </tr>
                   </thead>
                   <tbody>
@@ -85,7 +86,8 @@
       { data: 'kd_barang', className: 'text-center' },
       { data: 'nama', className: 'text-center' },
       { data: 'stok', className: 'text-center' },
-      { data: 'satuan_terkecil', className: 'text-center' }
+      { data: 'satuan_terkecil', className: 'text-center' },
+      { data: 'harga_beli', className: 'text-right', render: function(data) { const val = parseFloat(String(data).replace(',', '.')) || 0; return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } }
     ]
   });
 </script>

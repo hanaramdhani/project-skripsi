@@ -118,6 +118,18 @@ class controllerPembelian extends Controller
         ]);
     }
 
+    // Panggil stored procedure untuk refresh tabel harga beli terakhir
+    public function refreshHargaBeliTerakhir(Request $request)
+    {
+        try {
+            DB::statement("EXEC sp_harga_beli_terakhir");
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal refresh harga beli terakhir: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Harga beli terakhir berhasil di-refresh.']);
+    }
+
     public function getBarangSatuanBeli(Request $request)
     {
         $keyword = $request->q ?? '';
@@ -142,10 +154,12 @@ class controllerPembelian extends Controller
                                 m_satuan.kd_satuan AS kd_satuan,
                                 m_satuan.nama AS satuan,
                                 m_barang_satuan.harga_jual AS harga_jual,
-                                0 AS harga_beli
+                                harga_beli AS harga_beli,
+                                satuan_terkecil
                             FROM m_barang_satuan
                             INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
                             INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
+                            INNER JOIN t_harga_beli_terakhir c ON m_barang.kd_barang=c.kd_barang
                             WHERE (m_barang.nama LIKE ? OR m_barang.kd_barang LIKE ?)
                             ORDER BY m_barang.nama ASC
                             OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",

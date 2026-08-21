@@ -76,6 +76,7 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/pembelian', [controllerPembelian::class,'viewPembelian'])->name('index.pembelian');
     Route::get('/products-list-beli', [controllerPembelian::class,'getBarangSatuanBeli']);
     Route::get('/barang-by-barcode-beli', [controllerPembelian::class,'getBarangByBarcode']);
+    Route::post('/refresh-harga-beli-terakhir', [controllerPembelian::class,'refreshHargaBeliTerakhir'])->name('refresh.harga.beli.terakhir');
     Route::post('/input-pembelian', [controllerPembelian::class, 'inputPembelian'])->name('input.pembelian');
     Route::post('/edit-pembelian', [controllerPembelian::class, 'editPembelian'])->name('edit.pembelian');
     Route::get('/detail-pembelian', [controllerPembelian::class,'getDetailPembelian']);

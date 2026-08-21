@@ -172,9 +172,8 @@
                                         <tr>
                                           <th>Kode</th>
                                           <th>Nama Barang</th>
-                                          <th>Satuan</th>
-                                          <th class="text-right">Harga Jual</th>
-                                          <th class="text-right">Harga Beli Terakhir</th>
+                                          <th class="text-right">Harga Jual / Satuan</th>
+                                          <th class="text-right">Harga Beli Terakhir / Satuan</th>
                                         </tr>
                                       </thead>
                                       <tbody id="productResultBody"></tbody>
@@ -185,6 +184,7 @@
                                     <div>
                                       <button type="button" class="btn btn-sm btn-outline-secondary" id="productResultPrev">&laquo; Sebelumnya</button>
                                       <button type="button" class="btn btn-sm btn-outline-secondary" id="productResultNext">Berikutnya &raquo;</button>
+                                      <button type="button" class="btn btn-sm btn-outline-primary" id="productResultRefresh" title="Refresh harga beli terakhir"><i class="bi bi-arrow-clockwise"></i></button>
                                     </div>
                                   </div>
                                 </div>
@@ -486,9 +486,8 @@ $(document).ready(function () {
                 <tr class="product-result-row" data-idx="${idx}" style="cursor:pointer;">
                     <td>${item.kd_barang}</td>
                     <td>${item.barang}</td>
-                    <td>${item.satuan}</td>
-                    <td class="text-right">${formatRupiah(item.harga_jual)}</td>
-                    <td class="text-right">-</td>
+                    <td class="text-right" style="white-space:nowrap;">${formatRupiah(item.harga_jual)} / ${item.satuan}</td>
+                    <td class="text-right" style="white-space:nowrap;">${formatRupiah(item.harga_beli)} / ${item.satuan_terkecil || '-'}</td>
                 </tr>`;
         }).join('');
         $('#productResultBody').html(rows).data('items', items);
@@ -531,6 +530,31 @@ $(document).ready(function () {
     });
     $('#productResultNext').on('click', function () {
         fetchProductResults(productSearchTerm, productSearchPage + 1);
+    });
+    $('#productResultRefresh').on('click', function () {
+        const $btn = $(this);
+        const $icon = $btn.find('i');
+        $btn.prop('disabled', true);
+        $icon.addClass('bi-arrow-repeat').removeClass('bi-arrow-clockwise');
+        $.ajax({
+            url: '{{ route("refresh.harga.beli.terakhir") }}',
+            type: 'POST',
+            data: { _token: '{{ csrf_token() }}' },
+            success: function (res) {
+                if (!res || res.success === false) {
+                    alert((res && res.message) || 'Gagal refresh harga beli terakhir.');
+                } else {
+                    fetchProductResults(productSearchTerm, productSearchPage);
+                }
+            },
+            error: function () {
+                alert('Gagal refresh harga beli terakhir.');
+            },
+            complete: function () {
+                $btn.prop('disabled', false);
+                $icon.addClass('bi-arrow-clockwise').removeClass('bi-arrow-repeat');
+            }
+        });
     });
 
     $('#productSearchInput').on('input', function () {
