@@ -3,6 +3,36 @@
 @section('content')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+  /* Perkecil tinggi field form di halaman Pembelian (input & select terasa terlalu tinggi) */
+  .content-wrapper .form-control,
+  .content-wrapper select.form-control {
+      height: calc(1.5em + 0.5rem + 2px);
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+  }
+  .content-wrapper .col-form-label {
+      padding-top: calc(0.25rem + 1px);
+      padding-bottom: calc(0.25rem + 1px);
+      font-size: 0.875rem;
+  }
+  .content-wrapper .input-group-append .btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+  }
+  /* Sejajarkan tinggi card kiri dan kanan */
+  .card-outline {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+  }
+  .card-outline .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+  }
+</style>
 <div class="content-wrapper">
     <section class="content-header">
       <div class="container-fluid">
@@ -57,9 +87,10 @@
                       <tr>
                           <th class="text-center">NO. TRANSAKSI</th>
                           <th class="text-center">TANGGAL</th>
-                          <th class="text-center">JATUH TEMPO</th>
                           <th class="text-center">SUPPLIER</th>
-                          <th class="text-center">DISKON</th>
+                          <th class="text-center">JUMLAH ITEM</th>
+                          <th class="text-center">TOTAL DISKON</th>
+                          <th class="text-center">TOTAL</th>
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
@@ -116,8 +147,52 @@
                     <form class="form-horizontal" id="frm-input" name="frm_input" method="POST" action="{{ route('input.pembelian') }}">
                       @csrf
 
-                      <!-- TOP: Tanggal/No.Transaksi/Supplier/Jatuh Tempo/No Order | Pilih Barang | Total -->
+                      <!-- TOP: Pilih Barang (search box + hasil pencarian) | Tanggal/No.Transaksi/Supplier/Jatuh Tempo/No Order -->
                       <div class="row">
+                        <div class="col-md-7">
+                          <div class="card card-outline">
+                            <div class="card-body">
+                              <div class="form-group mb-0">
+                                <label><strong>Pilih Barang</strong></label>
+                                <div class="input-group">
+                                  <input type="text" class="form-control form-control-lg" id="productSearchInput" placeholder="Ketik min. 3 huruf nama/kode barang, atau scan barcode" autocomplete="off">
+                                  <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tambahBarangModal" title="Tambah Barang Baru">
+                                      <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                                <small id="barcodeMsg" class="text-danger" style="display:none;"></small>
+
+                                <!-- Hasil pencarian barang -->
+                                <div id="productResultBox" class="border rounded mt-2" style="display:none;">
+                                  <div style="max-height:260px; overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                      <thead class="thead-light">
+                                        <tr>
+                                          <th>Kode</th>
+                                          <th>Nama Barang</th>
+                                          <th>Satuan</th>
+                                          <th class="text-right">Harga Jual</th>
+                                          <th class="text-right">Harga Beli Terakhir</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody id="productResultBody"></tbody>
+                                    </table>
+                                  </div>
+                                  <div id="productResultPaging" class="d-flex justify-content-between align-items-center border-top p-2" style="display:none;">
+                                    <small id="productResultInfo" class="text-muted"></small>
+                                    <div>
+                                      <button type="button" class="btn btn-sm btn-outline-secondary" id="productResultPrev">&laquo; Sebelumnya</button>
+                                      <button type="button" class="btn btn-sm btn-outline-secondary" id="productResultNext">Berikutnya &raquo;</button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div class="col-md-5">
                           <div class="card card-outline">
                             <div class="card-body">
@@ -161,29 +236,6 @@
                                   <input type="text" name="keterangan" id="keterangan" class="form-control" value="-">
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body">
-                              <div class="form-group row mb-0">
-                                <label class="col-sm-3 col-form-label"><strong>Pilih Barang</strong></label>
-                                <div class="col-sm-9">
-                                  <select class="form-control form-control-lg" id="productSelect"></select>
-                                  <small id="barcodeMsg" class="text-danger" style="display:none;"></small>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-3">
-                          <div class="card card-outline">
-                            <div class="card-body text-right">
-                              <p class="mb-1" style="font-size:18px;">Total</p>
-                              <h1 class="font-weight-bold mb-0" id="totalDisplay" style="font-size:48px;">0</h1>
                             </div>
                           </div>
                         </div>
@@ -234,21 +286,24 @@
                                 </div>
                               </div>
                               <div class="form-group row mb-2">
-                                <label class="col-sm-5 col-form-label"><strong>Diskon</strong></label>
+                                <label class="col-sm-5 col-form-label"><strong>Diskon (%)</strong></label>
                                 <div class="col-sm-7">
-                                  <input type="number" name="masterDiskon" id="masterDiskon" class="form-control" value="0" required>
+                                  <input type="number" step="0.01" name="masterDiskon" id="masterDiskon" class="form-control" value="0" min="0" max="1" required>
+                                  <small class="text-muted">Max 1 (100%)</small>
                                 </div>
                               </div>
                               <div class="form-group row mb-2">
-                                <label class="col-sm-5 col-form-label"><strong>Pajak</strong></label>
+                                <label class="col-sm-5 col-form-label"><strong>Pajak (%)</strong></label>
                                 <div class="col-sm-7">
-                                  <input type="number" name="pajak" id="pajak" class="form-control" value="0" required>
+                                  <input type="number" step="0.01" name="pajak" id="pajak" class="form-control" value="0" min="0" max="1" required>
+                                  <small class="text-muted">Max 1 (100%)</small>
                                 </div>
                               </div>
                               <div class="form-group row mb-2">
-                                <label class="col-sm-5 col-form-label"><strong>PPNBM</strong></label>
+                                <label class="col-sm-5 col-form-label"><strong>PPNBM (%)</strong></label>
                                 <div class="col-sm-7">
-                                  <input type="number" name="ppnbm" id="ppnbm" class="form-control" value="0" required>
+                                  <input type="number" step="0.01" name="ppnbm" id="ppnbm" class="form-control" value="0" min="0" max="1" required>
+                                  <small class="text-muted">Max 1 (100%)</small>
                                 </div>
                               </div>
                               <div class="form-group row mb-0">
@@ -264,6 +319,10 @@
                         <div class="col-md-7">
                           <div class="card card-outline">
                             <div class="card-body d-flex align-items-center justify-content-end" style="height: 100%;">
+                              <div class="text-right mr-4">
+                                <p class="mb-1" style="font-size:18px;">Total</p>
+                                <h1 class="font-weight-bold mb-0" id="totalDisplay" style="font-size:48px;">0</h1>
+                              </div>
                               <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save"></i> Simpan</button>
                             </div>
                           </div>
@@ -278,6 +337,49 @@
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- Modal tambah barang baru (OUTSIDE form pembelian) -->
+  <div class="modal fade" id="tambahBarangModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Tambah Barang Baru</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <form id="frm-tambah-barang">
+          <div class="modal-body">
+            <small id="tambahBarangMsg" class="text-danger d-none d-block mb-2"></small>
+            <div class="form-group">
+              <label>Kode Barang</label>
+              <input type="text" class="form-control" name="kd_barang" id="tb_kd_barang">
+            </div>
+            <div class="form-group">
+              <label>Nama Barang</label>
+              <input type="text" class="form-control" name="nama" id="tb_nama" required>
+            </div>
+            <div class="form-group">
+              <label>Satuan</label>
+              <select class="form-control" name="kd_satuan" id="tb_kd_satuan" required>
+                <option value="">-- Pilih Satuan --</option>
+              </select>
+            </div>
+            <div class="form-group mb-0">
+              <label>Harga Jual</label>
+              <input type="number" class="form-control" name="harga_jual" id="tb_harga_jual" min="0" required>
+            </div>
+            <div class="form-group mb-0">
+              <label>Keterangan</label>
+              <input type="text" class="form-control" name="keterangan" id="tb_keterangan" value="-">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="tb_submit"><i class="bi bi-save"></i> Simpan &amp; Tambahkan ke Daftar</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
 @endsection
@@ -301,47 +403,39 @@
 let rowCount = 0;
 
 function formatRupiah(angka) {
-    return Number(angka || 0).toLocaleString('id-ID');
+    return Number(angka || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 $(document).ready(function () {
-    $('#productSelect').select2({
-        placeholder: 'Cari nama barang',
-        ajax: {
-            url: '/products-list-beli',
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                return { q: params.term };
-            },
-            processResults: function (data) {
-                return {
-                    results: data.dataBarangSatuan.map(function (item) {
-                        return {
-                            id: item.kd_barang + '-' + item.kd_satuan,
-                            text: item.barang + ' / ' + item.satuan,
-                            kd_barang: item.kd_barang,
-                            barang: item.barang,
-                            kd_satuan: item.kd_satuan,
-                            satuan: item.satuan,
-                            harga: item.harga_beli
-                        };
-                    })
-                };
-            },
-            cache: true
-        }
-    });
-
     // Tambah 1 baris barang ke tabel. data: {barang, satuan, kd_barang, kd_satuan, harga}
     function addProductRow(data) {
+        // Cek apakah barang+satuan sudah ada di tabel
+        let existingRow = null;
+        $('#productTable tbody tr').each(function () {
+            const barangInput = $(this).find('input[name*="[barang]"]');
+            const satuanInput = $(this).find('input[name*="[satuan]"]');
+            if (barangInput.val() === data.barang && satuanInput.val() === data.satuan) {
+                existingRow = this;
+                return false;
+            }
+        });
+
+        if (existingRow) {
+            // Jika sudah ada, tambah qty sebesar 1
+            const qtyInput = $(existingRow).find('input.qty');
+            const currentQty = parseFloat(qtyInput.val()) || 0;
+            qtyInput.val(currentQty + 1).trigger('input');
+            return;
+        }
+
+        // Jika belum ada, tambah baris baru dengan qty = 1
         let html = `
             <tr>
                 <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
                 <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
                 <td><input class="form-control harga" type="number" name="products[${rowCount}][harga_beli]" value="${data.harga}" data-row="${rowCount}" required></td>
                 <td><input class="form-control diskon_dt" value="0" type="number" name="products[${rowCount}][diskon_dt]" data-row="${rowCount}" required></td>
-                <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}" required></td>
+                <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" value="1" data-row="${rowCount}" required></td>
                 <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
                 <td class="text-center">
                     <input type="hidden" name="products[${rowCount}][kd_barang]" value="${data.kd_barang}">
@@ -352,6 +446,7 @@ $(document).ready(function () {
 
         $('#productTable tbody').append(html);
         rowCount++;
+        updateGrandTotal();
     }
 
     // Ubah baris respons server -> bentuk yang dipakai addProductRow
@@ -365,13 +460,167 @@ $(document).ready(function () {
         };
     }
 
-    $('#productSelect').on('select2:select', function (e) {
-        addProductRow(e.params.data);
-        // Reset select2 ke kosong supaya bisa pilih barang lain
-        $('#productSelect').val(null).trigger('change');
+    // ===== PILIH BARANG: search box + kotak hasil =====
+    // Default: daftar barang urut abjad (A-Z), 10 item/halaman, dengan navigasi
+    // Sebelumnya/Berikutnya. Mengetik >= 3 huruf akan memfilter daftar (tetap
+    // 10 item/halaman, halaman direset ke 1).
+    let productSearchTerm = '';
+    let productSearchPage = 1;
+    let productSearchTimer = null;
+    let productSearchRequest = null;
+
+    function renderProductResults(items, total, page, perPage) {
+        total = total || 0;
+        page = page || 1;
+        perPage = perPage || 10;
+
+        if (!items || !items.length) {
+            $('#productResultBody').empty().removeData('items');
+            $('#productResultPaging').hide();
+            $('#productResultBox').hide();
+            return;
+        }
+
+        let rows = items.map(function (item, idx) {
+            return `
+                <tr class="product-result-row" data-idx="${idx}" style="cursor:pointer;">
+                    <td>${item.kd_barang}</td>
+                    <td>${item.barang}</td>
+                    <td>${item.satuan}</td>
+                    <td class="text-right">${formatRupiah(item.harga_jual)}</td>
+                    <td class="text-right">-</td>
+                </tr>`;
+        }).join('');
+        $('#productResultBody').html(rows).data('items', items);
+
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        const start = (page - 1) * perPage + 1;
+        const end = Math.min(page * perPage, total);
+        $('#productResultInfo').text(`${start}-${end} dari ${total} barang`);
+        $('#productResultPrev').prop('disabled', page <= 1);
+        $('#productResultNext').prop('disabled', page >= totalPages);
+        $('#productResultPaging').show();
+
+        $('#productResultBox').show();
+    }
+
+    function fetchProductResults(term, page) {
+        productSearchTerm = term;
+        productSearchPage = page;
+        if (productSearchRequest) productSearchRequest.abort();
+        productSearchRequest = $.getJSON('/products-list-beli', { q: term, page: page }, function (res) {
+            renderProductResults(
+                (res && res.dataBarangSatuan) ? res.dataBarangSatuan : [],
+                res ? res.total : 0,
+                res ? res.page : page,
+                res ? res.perPage : 10
+            );
+        });
+    }
+
+    $('#productResultBody').on('click', '.product-result-row', function () {
+        const items = $('#productResultBody').data('items') || [];
+        const item = items[$(this).data('idx')];
+        if (!item) return;
+        addProductRow(mapServerItem(item));
+        $('#productSearchInput').val('').trigger('focus');
     });
 
-    // ===== SCAN BARCODE (lewat kolom pencarian select2) =====
+    $('#productResultPrev').on('click', function () {
+        if (productSearchPage > 1) fetchProductResults(productSearchTerm, productSearchPage - 1);
+    });
+    $('#productResultNext').on('click', function () {
+        fetchProductResults(productSearchTerm, productSearchPage + 1);
+    });
+
+    $('#productSearchInput').on('input', function () {
+        const term = $(this).val().trim();
+        clearTimeout(productSearchTimer);
+        // Kalau user hapus text atau kurang dari 3 karakter, tampilkan default list (top 10 asc)
+        if (term.length > 0 && term.length < 3) {
+            productSearchTimer = setTimeout(function () {
+                fetchProductResults('', 1);
+            }, 300);
+            return;
+        }
+        productSearchTimer = setTimeout(function () {
+            fetchProductResults(term, 1);
+        }, 300);
+    });
+
+    // Sembunyikan kotak hasil kalau klik di luar search box / kotak hasil
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#productSearchInput, #productResultBox').length) {
+            $('#productResultBox').hide();
+        }
+    });
+    // Fokus search box -> tampilkan daftar (default urut abjad kalau belum pernah dimuat)
+    $('#productSearchInput').on('focus', function () {
+        if ($('#productResultBody').data('items')) {
+            $('#productResultBox').show();
+            $('#productResultPaging').show();
+        } else {
+            fetchProductResults('', 1);
+        }
+    });
+
+    // ===== TAMBAH BARANG BARU (master barang + barang satuan sekaligus) =====
+    let satuanLoaded = false;
+    $('#tambahBarangModal').on('show.bs.modal', function () {
+        if (satuanLoaded) return;
+        $.getJSON('{{ route("edit.master.barang.satuan.data") }}', function (res) {
+            const satuan = (res && res.satuan) ? res.satuan : [];
+            const $select = $('#tb_kd_satuan');
+            satuan.forEach(function (s) {
+                $select.append(`<option value="${s.kd_satuan}">${s.nama}</option>`);
+            });
+            satuanLoaded = true;
+        });
+    });
+
+    $('#frm-tambah-barang').on('submit', function (e) {
+        e.preventDefault();
+        const $btn = $('#tb_submit');
+        const $msg = $('#tambahBarangMsg');
+        $msg.addClass('d-none').text('');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '{{ route("input.barang.cepat") }}',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                kd_barang: $('#tb_kd_barang').val(),
+                nama: $('#tb_nama').val(),
+                kd_satuan: $('#tb_kd_satuan').val(),
+                harga_jual: $('#tb_harga_jual').val(),
+                keterangan: $('#tb_keterangan').val()
+            },
+            success: function (res) {
+                if (!res || res.success === false) {
+                    $msg.removeClass('d-none').text((res && res.message) || 'Gagal menyimpan barang baru.');
+                    $btn.prop('disabled', false);
+                    return;
+                }
+                addProductRow(mapServerItem(res));
+                $('#tambahBarangModal').modal('hide');
+                $('#frm-tambah-barang')[0].reset();
+                $('#tb_keterangan').val('-');
+                $('#productSearchInput').trigger('focus');
+            },
+            error: function (xhr) {
+                const res = xhr.responseJSON;
+                const errorMsg = (res && res.message) ? res.message : ('Gagal menyimpan barang baru. Error: ' + xhr.status);
+                console.error('AJAX Error:', xhr.status, res);
+                $msg.removeClass('d-none').text(errorMsg);
+                $btn.prop('disabled', false);
+            }
+        });
+    });
+
+    $('#tambahBarangModal').on('hidden.bs.modal', function () { openPicker(); });
+
+    // ===== SCAN BARCODE (lewat kolom pencarian) =====
     const BARCODE_URL = '/barang-by-barcode-beli';
 
     function showBarcodeMsg(text) {
@@ -379,9 +628,9 @@ $(document).ready(function () {
         setTimeout(function () { $('#barcodeMsg').fadeOut(); }, 2500);
     }
 
-    // Buka select2 supaya kursor siap menerima hasil scan berikutnya
+    // Fokuskan kembali search box supaya siap menerima hasil scan berikutnya
     function openPicker() {
-        try { $('#productSelect').select2('open'); } catch (e) {}
+        try { $('#productSearchInput').trigger('focus'); } catch (e) {}
     }
 
     // Tampilkan pilihan satuan kalau 1 barcode punya >1 satuan
@@ -406,7 +655,7 @@ $(document).ready(function () {
         if (item) addProductRow(mapServerItem(item));
         $('#satuanPickerModal').modal('hide');
     });
-    // setelah modal ditutup, buka lagi select2 untuk scan berikutnya
+    // setelah modal ditutup, fokus lagi ke search box untuk scan berikutnya
     $('#satuanPickerModal').on('hidden.bs.modal', function () { openPicker(); });
 
     // Proses kode barcode hasil scan
@@ -415,11 +664,12 @@ $(document).ready(function () {
             const rows = (res && res.dataBarangSatuan) ? res.dataBarangSatuan : [];
             if (rows.length === 1) {
                 addProductRow(mapServerItem(rows[0]));
-                $('#productSelect').val(null).trigger('change');
-                $('#productSelect').select2('close');
+                $('#productSearchInput').val('');
+                renderProductResults([]);
                 setTimeout(openPicker, 60);          // siap scan berikutnya
             } else if (rows.length > 1) {
-                $('#productSelect').select2('close');
+                $('#productSearchInput').val('');
+                renderProductResults([]);
                 showSatuanPicker(rows);              // pilih satuan dulu
             } else {
                 showBarcodeMsg('Barcode "' + term + '" tidak ditemukan.');
@@ -428,26 +678,33 @@ $(document).ready(function () {
         }).fail(function () { showBarcodeMsg('Gagal mencari barcode.'); });
     }
 
-    // Intercept Enter di kolom pencarian select2.
+    // Intercept Enter di kolom pencarian.
     // - input mirip barcode (angka, opsional diawali +) -> exact lookup barcode
-    // - selain itu (nama/kode teks) -> biarkan select2 (Enter memilih hasil tersorot)
+    // - selain itu, kalau kotak hasil sedang terbuka -> pilih baris pertama
     const BARCODE_RE = /^\+?\d{6,}$/;
-    $('#productSelect').on('select2:open', function () {
-        const field = document.querySelector('.select2-container--open .select2-search__field');
-        if (!field || field.dataset.barcodeBound) return;
-        field.dataset.barcodeBound = '1';
-        field.addEventListener('keydown', function (e) {
-            if (e.key !== 'Enter' && e.keyCode !== 13) return;
-            const term = field.value.trim();
-            if (!term || !BARCODE_RE.test(term)) return;   // biarkan select2 yang menangani
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            handleBarcode(term, field);
-        }, true);
+    $('#productSearchInput').on('keydown', function (e) {
+        if (e.key !== 'Enter' && e.keyCode !== 13) return;
+        const term = $(this).val().trim();
+        if (!term) return;
+        e.preventDefault();
+        if (BARCODE_RE.test(term)) {
+            handleBarcode(term, this);
+            return;
+        }
+        const items = $('#productResultBody').data('items') || [];
+        if (items.length) {
+            addProductRow(mapServerItem(items[0]));
+            $(this).val('');
+            renderProductResults([]);
+        }
     });
 
-    // Auto-buka select2 saat pindah ke tab "Input Data"
-    $('a[href="#settings"]').on('shown.bs.tab', function () { openPicker(); });
+    // Auto-fokus search box saat pindah ke tab "Input Data"
+    $('a[href="#settings"]').on('show.bs.tab', function (e) {
+        if ($(e.target).attr('href') === '#settings') {
+            setTimeout(function () { openPicker(); }, 100);
+        }
+    });
 
     // Recalculate row + grand total when qty/diskon/harga changes
     $('#productTable').on('input', '.qty, .diskon_dt, .harga', function () {
@@ -468,20 +725,112 @@ $(document).ready(function () {
         });
         $('#totalPembelian').val(subtotal);
 
-        let diskon = parseFloat($('#masterDiskon').val()) || 0;
-        let pajak  = parseFloat($('#pajak').val())  || 0;
-        let ppnbm  = parseFloat($('#ppnbm').val())  || 0;
-        let grand = subtotal - diskon + pajak + ppnbm;
+        let diskonPersen = parseFloat($('#masterDiskon').val()) || 0;
+        let pajakPersen  = parseFloat($('#pajak').val())  || 0;
+        let ppnbmPersen  = parseFloat($('#ppnbm').val())  || 0;
+
+        // Hitung diskon, pajak dan ppnbm dari persen
+        let diskonNilai = subtotal * diskonPersen;
+        let pajakNilai = subtotal * pajakPersen;
+        let ppnbmNilai = subtotal * ppnbmPersen;
+
+        let grand = subtotal - diskonNilai + pajakNilai + ppnbmNilai;
 
         $('#grandTotal').val(grand);
         $('#totalDisplay').text(formatRupiah(grand));
     }
 
-    $('#masterDiskon, #pajak, #ppnbm').on('input change', updateGrandTotal);
+    // Validasi diskon, pajak dan ppnbm tidak boleh lebih dari 1
+    $('#masterDiskon, #pajak, #ppnbm').on('input change', function () {
+        let val = parseFloat($(this).val());
+        if (isNaN(val)) val = 0;
+        if (val > 1) {
+            $(this).val(1);
+        } else if (val < 0) {
+            $(this).val(0);
+        }
+        updateGrandTotal();
+    });
 
     $('#productTable').on('click', '.removeRow', function () {
         $(this).closest('tr').remove();
         updateGrandTotal();
+    });
+
+    // Submit form pembelian via AJAX, hanya reload tab data pembelian
+    $('#frm-input').on('submit', function (e) {
+        e.preventDefault();
+        const $form = $(this);
+        const $btn = $form.find('button[type="submit"]');
+
+        // Validasi: cek ada item dengan harga beli 0
+        let hasZeroPrice = false;
+        $('#productTable tbody tr').each(function () {
+            const harga = parseFloat($(this).find('input.harga').val()) || 0;
+            if (harga === 0) {
+                hasZeroPrice = true;
+                return false;
+            }
+        });
+
+        if (hasZeroPrice) {
+            alert('Mohon isi harga beli untuk semua item. Ada item dengan harga beli 0.');
+            return;
+        }
+
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: $form.attr('action'),
+            type: 'POST',
+            data: $form.serialize(),
+            success: function (res) {
+                if (!res || res.success === false) {
+                    alert((res && res.message) || 'Gagal menyimpan pembelian.');
+                    $btn.prop('disabled', false);
+                    return;
+                }
+
+                // Reset form
+                $form[0].reset();
+                $('#productTable tbody').empty();
+                rowCount = 0;
+                updateGrandTotal();
+
+                // Switch ke tab "Data Pembelian"
+                $('a[href="#activity"]').tab('show');
+
+                // Reload tabel data pembelian dengan delay
+                setTimeout(function () {
+                    // Cari instance DataTable dari #example2
+                    const $table = $('#example2');
+                    if ($.fn.dataTable.isDataTable('#example2')) {
+                        $table.DataTable().ajax.reload(null, false);
+                    }
+                }, 500);
+
+                // Generate nomor transaksi baru
+                const now = new Date();
+                const ymd = now.getFullYear().toString().slice(-2) +
+                           String(now.getMonth() + 1).padStart(2, '0') +
+                           String(now.getDate()).padStart(2, '0');
+                const currentNo = $('#no_transaksi').val();
+                const lastNum = parseInt(currentNo.slice(-4)) + 1;
+                const newNo = 'BB' + ymd + String(lastNum).padStart(4, '0');
+                $('#no_transaksi').val(newNo);
+
+                // Fokus ke search box
+                $('#productSearchInput').trigger('focus');
+
+                // Enable button kembali
+                $btn.prop('disabled', false);
+            },
+            error: function (xhr) {
+                const res = xhr.responseJSON;
+                alert((res && res.message) || 'Gagal menyimpan pembelian.');
+                $btn.prop('disabled', false);
+            }
+        });
     });
 });
 </script>
@@ -520,10 +869,11 @@ $(document).ready(function () {
     },
     columns: [
       { data: 'no_transaksi', className: 'text-center' },
-      { data: 'tanggal_pembelian', className: 'text-center' },
-      { data: 'tanggal_jatuh_tempo', className: 'text-center' },
-      { data: 'supplier', className: 'text-center' },
-      { data: 'diskon', className: 'text-center' },
+      { data: 'tanggal', className: 'text-center' },
+      { data: 'customer', className: 'text-center' },
+      { data: 'jumlah_item', className: 'text-center' },
+      { data: 'total_diskon', className: 'text-right', render: function(data) { console.log('DEBUG total_diskon:', data, 'type:', typeof data); const val = parseFloat(String(data).replace(',', '.')) || 0; console.log('DEBUG parsed val:', val); return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } },
+      { data: 'total', className: 'text-right', render: function(data) { const val = parseFloat(String(data).replace(',', '.')) || 0; return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } },
       {
         data: null,
         orderable: false,

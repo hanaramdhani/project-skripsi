@@ -48,13 +48,14 @@ class controllerPembelian extends Controller
         $orderColumnIndex = (int) $request->input('order.0.column', 0);
         $orderDir         = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
         $columnsMap = [
-            0 => 't_pembelian.no_transaksi',
-            1 => 't_pembelian.tanggal',
-            2 => 't_pembelian.tanggal_jatuh_tempo',
-            3 => 'm_supplier.nama',
-            4 => 't_pembelian.diskon1',
+            0 => 'ph.no_transaksi',
+            1 => 'ph.tanggal',
+            2 => 'ph.customer',
+            3 => 'ph.jumlah_item',
+            4 => 'ph.total_diskon',
+            5 => 'ph.total',
         ];
-        $orderColumn = $columnsMap[$orderColumnIndex] ?? 't_pembelian.tanggal';
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'ph.tanggal';
 
         if ($length <= 0) {
             $length = 10;
@@ -64,60 +65,50 @@ class controllerPembelian extends Controller
         $bindings = [];
 
         if (!empty($dateFrom)) {
-            $where[] = "CAST(t_pembelian.tanggal AS DATE) >= ?";
+            $where[] = "CAST(ph.tanggal AS DATE) >= ?";
             $bindings[] = $dateFrom;
         }
         if (!empty($dateTo)) {
-            $where[] = "CAST(t_pembelian.tanggal AS DATE) <= ?";
+            $where[] = "CAST(ph.tanggal AS DATE) <= ?";
             $bindings[] = $dateTo;
         }
 
         $bindingsFiltered = $bindings;
         if (!empty($search)) {
-            $where[] = "(t_pembelian.no_transaksi LIKE ? OR m_supplier.nama LIKE ?)";
+            $where[] = "(ph.no_transaksi LIKE ? OR ph.customer LIKE ?)";
             $bindingsFiltered[] = "%$search%";
             $bindingsFiltered[] = "%$search%";
         }
 
         $whereSqlFiltered = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-        $recordsTotal = DB::select("SELECT COUNT(*) AS c FROM t_pembelian")[0]->c;
+        $recordsTotal = DB::select("SELECT COUNT(*) AS c FROM pembelian_header")[0]->c;
 
         $recordsFiltered = DB::select("
             SELECT COUNT(*) AS c
-            FROM t_pembelian
-            INNER JOIN m_supplier ON t_pembelian.kd_supplier = m_supplier.kd_supplier
+            FROM pembelian_header ph
             $whereSqlFiltered
         ", $bindingsFiltered)[0]->c;
 
         $sql = "SELECT
-                    t_pembelian.no_transaksi,
-                    CONCAT(DAY(t_pembelian.tanggal), ' ',
-                        CASE MONTH(t_pembelian.tanggal)
-                            WHEN 1 THEN 'Januari'
-                            WHEN 2 THEN 'Februari'
-                            WHEN 3 THEN 'Maret'
-                            WHEN 4 THEN 'April'
-                            WHEN 5 THEN 'Mei'
-                            WHEN 6 THEN 'Juni'
-                            WHEN 7 THEN 'Juli'
-                            WHEN 8 THEN 'Agustus'
-                            WHEN 9 THEN 'September'
-                            WHEN 10 THEN 'Oktober'
-                            WHEN 11 THEN 'November'
-                            WHEN 12 THEN 'Desember'
-                        END, ' ', YEAR(t_pembelian.tanggal)
-                    ) AS tanggal_pembelian,
-                    CONVERT(varchar(10), t_pembelian.tanggal_jatuh_tempo, 120) AS tanggal_jatuh_tempo,
-                    m_supplier.nama AS supplier,
-                    t_pembelian.diskon1 AS diskon
-                FROM t_pembelian
-                INNER JOIN m_supplier ON t_pembelian.kd_supplier = m_supplier.kd_supplier
+                    ph.no_transaksi,
+                    ph.tanggal,
+                    ph.customer,
+                    ph.jumlah_item,
+                    ph.total_diskon,
+                    ph.total
+                FROM pembelian_header ph
                 $whereSqlFiltered
                 ORDER BY $orderColumn $orderDir
                 OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
 
         $data = DB::select($sql, $bindingsFiltered);
+
+        // Pastikan desimal dibatasi 2 angka di backend
+        foreach ($data as $row) {
+            $row->total_diskon = (float)round((float)$row->total_diskon, 2);
+            $row->total = (float)round((float)$row->total, 2);
+        }
 
         return response()->json([
             'draw'            => $draw,
@@ -129,32 +120,43 @@ class controllerPembelian extends Controller
 
     public function getBarangSatuanBeli(Request $request)
     {
-        $keyword = $request->q;
+        $keyword = $request->q ?? '';
+        $page    = max(1, (int) $request->input('page', 1));
+        $perPage = 10;
+        $offset  = ($page - 1) * $perPage;
 
-        // Kolom harga_beli tidak ada di m_barang_satuan. Ambil harga beli terakhir
-        // dari transaksi pembelian sebelumnya (per barang + satuan) sebagai nilai
-        // default; tetap bisa diubah manual saat input pembelian.
-        $dataBarangSatuan = DB::select("SELECT TOP 10
+        $bindings = ["%$keyword%", "%$keyword%"];
+
+        $total = DB::select("SELECT COUNT(*) AS c
+                            FROM m_barang_satuan
+                            INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
+                            INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
+                            WHERE (m_barang.nama LIKE ? OR m_barang.kd_barang LIKE ?)", $bindings)[0]->c;
+
+        // Query simplified: hapus correlated subquery harga_beli (lambat).
+        // Harga beli ditampilkan "-" di FE, user lihat di row yang dipilih dari t_pembelian_detail.
+        // Atau nanti fetch via AJAX terpisah kalau perlu.
+        $dataBarangSatuan = DB::select("SELECT
                                 m_barang.kd_barang AS kd_barang,
                                 m_barang.nama AS barang,
                                 m_satuan.kd_satuan AS kd_satuan,
                                 m_satuan.nama AS satuan,
                                 m_barang_satuan.harga_jual AS harga_jual,
-                                ISNULL((
-                                    SELECT TOP 1 d.harga_beli
-                                    FROM t_pembelian_detail d
-                                    INNER JOIN t_pembelian p ON d.no_transaksi = p.no_transaksi
-                                    WHERE d.kd_barang = m_barang_satuan.kd_barang
-                                      AND d.kd_satuan = m_barang_satuan.kd_satuan
-                                    ORDER BY p.tanggal DESC, p.no_transaksi DESC
-                                ), 0) AS harga_beli
+                                0 AS harga_beli
                             FROM m_barang_satuan
                             INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
                             INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
                             WHERE (m_barang.nama LIKE ? OR m_barang.kd_barang LIKE ?)
-                            ORDER BY m_barang.nama", ["%$keyword%", "%$keyword%"]);
+                            ORDER BY m_barang.nama ASC
+                            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+                            array_merge($bindings, [$offset, $perPage]));
 
-        return response()->json(['dataBarangSatuan' => $dataBarangSatuan]);
+        return response()->json([
+            'dataBarangSatuan' => $dataBarangSatuan,
+            'total'            => (int) $total,
+            'page'             => $page,
+            'perPage'          => $perPage,
+        ]);
     }
 
     // Lookup barang berdasarkan barcode (kd_barang) secara exact match.
@@ -200,36 +202,48 @@ class controllerPembelian extends Controller
         $keterangan          = $request->keterangan ?: '-';
         $kd_user             = session('user.kd_user') ?? 'UAA000';
 
-        DB::insert("INSERT INTO t_pembelian
-                    (no_transaksi, kd_supplier, kd_divisi, kd_jenis, kd_kas, no_order,
-                     tanggal, tanggal_jatuh_tempo, status,
-                     diskon1, diskon2, diskon3, diskon4, pajak, ppnbm,
-                     keterangan, kd_user, tanggal_server)
-                    VALUES
-                    (?, ?, 'DAA000', 'JAA000', 'KAA001', ?,
-                     ?, ?, 1,
-                     ?, 0, 0, 0, ?, ?,
-                     ?, ?, GETDATE())",
-                    [$no_transaksi, $kd_supplier, $no_order, $tanggal, $tanggal_jatuh_tempo,
-                     $masterDiskon, $pajak, $ppnbm, $keterangan, $kd_user]);
+        try {
+            DB::transaction(function () use ($no_transaksi, $kd_supplier, $no_order, $tanggal, $tanggal_jatuh_tempo, $masterDiskon, $pajak, $ppnbm, $keterangan, $kd_user, $request) {
+                DB::insert("INSERT INTO t_pembelian
+                            (no_transaksi, kd_supplier, kd_divisi, kd_jenis, kd_kas, no_order,
+                             tanggal, tanggal_jatuh_tempo, status,
+                             diskon1, diskon2, diskon3, diskon4, pajak, ppnbm,
+                             keterangan, kd_user, tanggal_server)
+                            VALUES
+                            (?, ?, 'DAA000', 'JAA000', 'KAA001', ?,
+                             ?, ?, 1,
+                             ?, 0, 0, 0, ?, ?,
+                             ?, ?, GETDATE())",
+                            [$no_transaksi, $kd_supplier, $no_order, $tanggal, $tanggal_jatuh_tempo,
+                             $masterDiskon, $pajak, $ppnbm, $keterangan, $kd_user]);
 
-        $products = $request->products ?? [];
-        foreach ($products as $product) {
-            $kd_barang  = $product['kd_barang'];
-            $kd_satuan  = $product['kd_satuan'];
-            $qty        = (float) $product['qty'];
-            $harga_beli = (float) $product['harga_beli'];
-            $diskon_dt  = (float) ($product['diskon_dt'] ?? 0);
-            $total      = ($qty * $harga_beli) - ($diskon_dt * $qty);
+                $products = $request->products ?? [];
+                foreach ($products as $product) {
+                    $kd_barang  = $product['kd_barang'];
+                    $kd_satuan  = $product['kd_satuan'];
+                    $qty        = (float) $product['qty'];
+                    $harga_beli = (float) $product['harga_beli'];
+                    $diskon_dt  = (float) ($product['diskon_dt'] ?? 0);
+                    $total      = ($qty * $harga_beli) - ($diskon_dt * $qty);
 
-            // Kolom "nomor" adalah IDENTITY (auto-increment), jadi tidak di-insert manual.
-            DB::insert("INSERT INTO t_pembelian_detail
-                        (no_transaksi, kd_barang, kd_satuan, jenis, qty, harga_beli,
-                         diskon1, diskon2, diskon3, diskon4, point1, total)
-                        VALUES
-                        (?, ?, ?, 1, ?, ?, ?, 0, 0, 0, 0, ?)",
-                        [$no_transaksi, $kd_barang, $kd_satuan, $qty, $harga_beli,
-                         $diskon_dt, $total]);
+                    DB::insert("INSERT INTO t_pembelian_detail
+                                (no_transaksi, kd_barang, kd_satuan, jenis, qty, harga_beli,
+                                 diskon1, diskon2, diskon3, diskon4, point1, total)
+                                VALUES
+                                (?, ?, ?, 1, ?, ?, ?, 0, 0, 0, 0, ?)",
+                                [$no_transaksi, $kd_barang, $kd_satuan, $qty, $harga_beli,
+                                 $diskon_dt, $total]);
+                }
+            });
+        } catch (\Throwable $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal menyimpan pembelian.'], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal menyimpan pembelian');
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Pembelian berhasil disimpan.']);
         }
         return redirect()->route('index.pembelian');
     }
@@ -243,10 +257,10 @@ class controllerPembelian extends Controller
                                 m_barang.nama AS barang,
                                 m_satuan.kd_satuan AS kd_satuan,
                                 m_satuan.nama AS satuan,
-                                t_pembelian_detail.harga_beli,
-                                t_pembelian_detail.qty,
-                                t_pembelian_detail.diskon1 AS diskon,
-                                t_pembelian_detail.total
+                                ROUND(t_pembelian_detail.harga_beli, 2) AS harga_beli,
+                                ROUND(t_pembelian_detail.qty, 2) AS qty,
+                                ROUND(IIF(t_pembelian_detail.diskon1 >= 1, t_pembelian_detail.diskon1, (t_pembelian_detail.diskon1 * t_pembelian_detail.harga_beli)), 2) AS diskon,
+                                ROUND(t_pembelian_detail.total, 2) AS total
                             FROM t_pembelian
                             INNER JOIN t_pembelian_detail ON t_pembelian.no_transaksi = t_pembelian_detail.no_transaksi
                             INNER JOIN m_barang ON t_pembelian_detail.kd_barang = m_barang.kd_barang

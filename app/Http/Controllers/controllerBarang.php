@@ -100,6 +100,51 @@ class controllerBarang extends Controller
         return redirect()->route('index.master.barang');
     }
 
+    // Tambah barang + satuan (harga jual & harga beli) sekaligus, dipakai dari
+    // modal "Tambah Barang Baru" di halaman Input Pembelian.
+    public function inputBarangCepat(Request $request)
+    {
+        $request->validate([
+            'kd_barang'  => 'required|string',
+            'nama'       => 'required|string',
+            'kd_satuan'  => 'required|string',
+            'harga_jual' => 'required|numeric|min:0',
+        ]);
+
+        $kd_barang  = $request->kd_barang;
+        $nama       = $request->nama;
+        $keterangan = $request->keterangan ?: '-';
+        $kd_satuan  = $request->kd_satuan;
+        $harga_jual = (float) $request->harga_jual;
+
+        try {
+            DB::transaction(function () use ($kd_barang, $nama, $keterangan, $kd_satuan, $harga_jual) {
+                DB::insert("INSERT INTO m_barang
+                            (kd_barang, nama, keterangan, status, tanggal_daftar, date_add)
+                            VALUES (?, ?, ?, 1, GETDATE(), GETDATE())", [$kd_barang, $nama, $keterangan]);
+
+                DB::insert("INSERT INTO m_barang_satuan
+                            (kd_barang, kd_satuan, harga_jual, keterangan, [status])
+                            VALUES (?, ?, ?, ?, 1)", [$kd_barang, $kd_satuan, $harga_jual, $keterangan]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan barang baru: ' . $e->getMessage()], 500);
+        }
+
+        $satuanRow  = DB::select("SELECT nama FROM m_satuan WHERE kd_satuan = ?", [$kd_satuan]);
+        $satuanNama = !empty($satuanRow) ? $satuanRow[0]->nama : '';
+
+        return response()->json([
+            'success'    => true,
+            'kd_barang'  => $kd_barang,
+            'barang'     => $nama,
+            'kd_satuan'  => $kd_satuan,
+            'satuan'     => $satuanNama,
+            'harga_jual' => $harga_jual,
+            'harga_beli' => $harga_jual,
+        ]);
+    }
+
     public function editBarang(Request $request)
     {
         $kd_barang = $request->edit_kd_barang;

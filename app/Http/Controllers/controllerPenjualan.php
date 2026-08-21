@@ -41,12 +41,14 @@ class controllerPenjualan extends Controller
         $orderColumnIndex = (int) $request->input('order.0.column', 0);
         $orderDir         = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
         $columnsMap = [
-            0 => 't_penjualan.no_transaksi',
-            1 => 't_penjualan.tanggal',
-            2 => 't_penjualan.diskon',
-            3 => 'm_customer.nama',
+            0 => 'ph.no_transaksi',
+            1 => 'ph.tanggal',
+            2 => 'ph.customer',
+            3 => 'ph.jumlah_item',
+            4 => 'ph.total_diskon',
+            5 => 'ph.total',
         ];
-        $orderColumn = $columnsMap[$orderColumnIndex] ?? 't_penjualan.tanggal';
+        $orderColumn = $columnsMap[$orderColumnIndex] ?? 'ph.tanggal';
 
         if ($length <= 0) {
             $length = 10;
@@ -56,17 +58,17 @@ class controllerPenjualan extends Controller
         $bindings = [];
 
         if (!empty($dateFrom)) {
-            $where[] = "CAST(t_penjualan.tanggal AS DATE) >= ?";
+            $where[] = "CAST(ph.tanggal AS DATE) >= ?";
             $bindings[] = $dateFrom;
         }
         if (!empty($dateTo)) {
-            $where[] = "CAST(t_penjualan.tanggal AS DATE) <= ?";
+            $where[] = "CAST(ph.tanggal AS DATE) <= ?";
             $bindings[] = $dateTo;
         }
 
         $bindingsFiltered = $bindings;
         if (!empty($search)) {
-            $where[] = "(t_penjualan.no_transaksi LIKE ? OR m_customer.nama LIKE ?)";
+            $where[] = "(ph.no_transaksi LIKE ? OR ph.customer LIKE ?)";
             $bindingsFiltered[] = "%$search%";
             $bindingsFiltered[] = "%$search%";
         }
@@ -74,44 +76,35 @@ class controllerPenjualan extends Controller
         $whereSqlFiltered = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
 
         // Total semua data (tanpa filter sama sekali)
-        $recordsTotal = DB::select("SELECT COUNT(*) AS c FROM t_penjualan")[0]->c;
+        $recordsTotal = DB::select("SELECT COUNT(*) AS c FROM penjualan_header")[0]->c;
 
         // Total setelah filter tanggal + search
         $recordsFiltered = DB::select("
             SELECT COUNT(*) AS c
-            FROM t_penjualan
-            INNER JOIN m_customer ON t_penjualan.kd_customer = m_customer.kd_customer
+            FROM penjualan_header ph
             $whereSqlFiltered
         ", $bindingsFiltered)[0]->c;
 
         // Data halaman
         $sql = "SELECT
-                    t_penjualan.no_transaksi,
-                    CONCAT(DAY(t_penjualan.tanggal), ' ',
-                        CASE MONTH(t_penjualan.tanggal)
-                            WHEN 1 THEN 'Januari'
-                            WHEN 2 THEN 'Februari'
-                            WHEN 3 THEN 'Maret'
-                            WHEN 4 THEN 'April'
-                            WHEN 5 THEN 'Mei'
-                            WHEN 6 THEN 'Juni'
-                            WHEN 7 THEN 'Juli'
-                            WHEN 8 THEN 'Agustus'
-                            WHEN 9 THEN 'September'
-                            WHEN 10 THEN 'Oktober'
-                            WHEN 11 THEN 'November'
-                            WHEN 12 THEN 'Desember'
-                        END, ' ', YEAR(t_penjualan.tanggal)
-                    ) AS tanggal_penjualan,
-                    t_penjualan.diskon,
-                    m_customer.nama AS customer
-                FROM t_penjualan
-                INNER JOIN m_customer ON t_penjualan.kd_customer = m_customer.kd_customer
+                    ph.no_transaksi,
+                    ph.tanggal,
+                    ph.customer,
+                    ph.jumlah_item,
+                    ph.total_diskon,
+                    ph.total
+                FROM penjualan_header ph
                 $whereSqlFiltered
                 ORDER BY $orderColumn $orderDir
                 OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
 
         $data = DB::select($sql, $bindingsFiltered);
+
+        // Pastikan desimal dibatasi 2 angka di backend
+        foreach ($data as $row) {
+            $row->total_diskon = (float)round((float)$row->total_diskon, 2);
+            $row->total = (float)round((float)$row->total, 2);
+        }
 
         return response()->json([
             'draw'            => $draw,
@@ -122,9 +115,20 @@ class controllerPenjualan extends Controller
     }
 
     public function getBarangSatuan(Request $request){
-        $keyword = $request->q; // assuming you're passing ?q=keyword
+        $keyword = $request->q ?? '';
+        $page    = max(1, (int) $request->input('page', 1));
+        $perPage = 10;
+        $offset  = ($page - 1) * $perPage;
 
-        $dataBarangSatuan = DB::select("SELECT TOP 10
+        $bindings = ["%$keyword%", "%$keyword%"];
+
+        $total = DB::select("SELECT COUNT(*) AS c
+                            FROM m_barang_satuan
+                            INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
+                            INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
+                            WHERE (m_barang.nama LIKE ? OR m_barang.kd_barang LIKE ?)", $bindings)[0]->c;
+
+        $dataBarangSatuan = DB::select("SELECT
                                 m_barang.kd_barang AS kd_barang,
                                 m_barang.nama AS barang,
                                 m_satuan.kd_satuan AS kd_satuan,
@@ -134,8 +138,16 @@ class controllerPenjualan extends Controller
                             INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
                             INNER JOIN m_satuan ON m_barang_satuan.kd_satuan = m_satuan.kd_satuan
                             WHERE (m_barang.nama LIKE ? OR m_barang.kd_barang LIKE ?)
-                            ORDER BY m_barang.nama", ["%$keyword%", "%$keyword%"]);
-        return response()->json(['dataBarangSatuan'=>$dataBarangSatuan]);
+                            ORDER BY m_barang.nama ASC
+                            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+                            array_merge($bindings, [$offset, $perPage]));
+
+        return response()->json([
+            'dataBarangSatuan' => $dataBarangSatuan,
+            'total'            => (int) $total,
+            'page'             => $page,
+            'perPage'          => $perPage,
+        ]);
     }
 
     // Lookup barang berdasarkan barcode (kd_barang) exact match untuk input scan.
@@ -165,39 +177,50 @@ class controllerPenjualan extends Controller
         $masterDiskon = $request->masterDiskon;
         $tanggal = $request->tanggal ?: date('Y-m-d');
 
+        try {
+            DB::transaction(function () use ($no_transaksi, $kd_customer, $tanggal, $masterDiskon, $kd_pegawai, $request) {
+                DB::insert("INSERT INTO t_penjualan
+                (no_transaksi, kd_customer, kd_divisi,kd_jenis, kd_kas, tanggal, diskon, keterangan, status,kd_voucher,no_bukti,tanggal_jatuh_tempo)
+                VALUES
+                (?, ?, 1, '-', '-', ?, ?, '-', 1, 'KAA000', '-', DATEADD(DAY, 7, ?))
+                ", [$no_transaksi, $kd_customer, $tanggal, $masterDiskon, $tanggal]);
 
-        DB::insert("INSERT INTO t_penjualan
-        (no_transaksi, kd_customer, kd_divisi,kd_jenis, kd_kas, tanggal, diskon, keterangan, status,kd_voucher,no_bukti,tanggal_jatuh_tempo)
-        VALUES
-        (?, ?, 1, '-', '-', ?, ?, '-', 1, 'KAA000', '-', DATEADD(DAY, 7, ?))
-        ", [$no_transaksi, $kd_customer, $tanggal, $masterDiskon, $tanggal]);
+                $products = $request->products ?? [];
 
-        $products = $request->products;
+                // Ambil harga beli terakhir untuk semua barang yang dipilih sekaligus
+                $kdBarangList = collect($products)->pluck('kd_barang')->filter()->unique()->implode(',');
+                $hargaBeliMap = [];
+                if ($kdBarangList !== '') {
+                    $hargaBeliRows = DB::select("SELECT kd_barang, harga_beli FROM dbo.getHargaBeliTerakhir(?)", [$kdBarangList]);
+                    foreach ($hargaBeliRows as $row) {
+                        $hargaBeliMap[$row->kd_barang] = $row->harga_beli;
+                    }
+                }
 
-        // Ambil harga beli terakhir untuk semua barang yang dipilih sekaligus
-        // lewat table function dbo.getHargaBeliTerakhir('kd1,kd2,...').
-        $kdBarangList = collect($products)->pluck('kd_barang')->filter()->unique()->implode(',');
-        $hargaBeliMap = [];
-        if ($kdBarangList !== '') {
-            $hargaBeliRows = DB::select("SELECT kd_barang, harga_beli FROM dbo.getHargaBeliTerakhir(?)", [$kdBarangList]);
-            foreach ($hargaBeliRows as $row) {
-                $hargaBeliMap[$row->kd_barang] = $row->harga_beli;
+                foreach ($products as $product) {
+                    $kd_barang = $product['kd_barang'];
+                    $kd_satuan = $product['kd_satuan'];
+                    $qty = $product['qty'];
+                    $diskon_dt = $product['diskon_dt'];
+                    $harga_jual = $product['harga_jual'];
+                    $harga_beli_terakhir = $hargaBeliMap[$kd_barang] ?? 0;
+
+                    DB::insert("INSERT INTO t_penjualan_detail
+                            (no_transaksi, kd_barang, kd_satuan,kd_pegawai, jenis, harga_jual,qty, diskon, keterangan, harga_beli_terakhir)
+                            VALUES
+                            (?, ?, ?, ?, '1', ?, ?, ?, '-', ?)",
+                            [$no_transaksi, $kd_barang, $kd_satuan, $kd_pegawai, $harga_jual, $qty, $diskon_dt, $harga_beli_terakhir]);
+                }
+            });
+        } catch (\Throwable $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal menyimpan penjualan.'], 500);
             }
+            return redirect()->back()->with('error', 'Gagal menyimpan penjualan');
         }
 
-        foreach ($products as $product) {
-            $kd_barang = $product['kd_barang'];
-            $kd_satuan = $product['kd_satuan'];
-            $qty = $product['qty'];
-            $diskon_dt = $product['diskon_dt'];
-            $harga_jual = $product['harga_jual'];
-            $harga_beli_terakhir = $hargaBeliMap[$kd_barang] ?? 0;
-
-            DB::insert("INSERT INTO t_penjualan_detail
-                    (no_transaksi, kd_barang, kd_satuan,kd_pegawai, jenis, harga_jual,qty, diskon, keterangan, harga_beli_terakhir)
-                    VALUES
-                    (?, ?, ?, ?, '1', ?, ?, ?, '-', ?)",
-                    [$no_transaksi, $kd_barang, $kd_satuan, $kd_pegawai, $harga_jual, $qty, $diskon_dt, $harga_beli_terakhir]);
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Penjualan berhasil disimpan.']);
         }
         return redirect()->route('index.penjualan');
     }
@@ -212,14 +235,14 @@ class controllerPenjualan extends Controller
                                 m_barang.nama AS barang,
                                 m_satuan.kd_satuan AS kd_satuan,
                                 m_satuan.nama AS satuan,
-                                harga_jual,
-                                qty,
-                                t_penjualan_detail.diskon AS diskon
-                            FROM t_penjualan 
+                                ROUND(t_penjualan_detail.harga_jual, 2) AS harga_jual,
+                                ROUND(t_penjualan_detail.qty, 2) AS qty,
+                                ROUND(t_penjualan_detail.diskon, 2) AS diskon
+                            FROM t_penjualan
                             INNER JOIN t_penjualan_detail ON t_penjualan.no_transaksi = t_penjualan_detail.no_transaksi
                             INNER JOIN m_barang ON t_penjualan_detail.kd_barang = m_barang.kd_barang
                             INNER JOIN m_satuan ON t_penjualan_detail.kd_satuan = m_satuan.kd_satuan
-                            WHERE t_penjualan.no_transaksi=?", ["$keyword"]);
+                            WHERE t_penjualan.no_transaksi = ?", [$keyword]);
         return response()->json(['dataDetail'=>$sql]);
     }
 

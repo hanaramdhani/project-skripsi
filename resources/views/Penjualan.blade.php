@@ -3,8 +3,35 @@
 @section('content')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+  .content-wrapper .form-control,
+  .content-wrapper select.form-control {
+      height: calc(1.5em + 0.5rem + 2px);
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+  }
+  .content-wrapper .col-form-label {
+      padding-top: calc(0.25rem + 1px);
+      padding-bottom: calc(0.25rem + 1px);
+      font-size: 0.875rem;
+  }
+  .content-wrapper .input-group-append .btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+  }
+  .card-outline {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+  }
+  .card-outline .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+  }
+</style>
 <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
     <section class="content-header">
       <div class="container-fluid">
         <div class="row mb-2">
@@ -14,14 +41,14 @@
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="#">Home</a></li>
-              <li class="breadcrumb-item active">User Profile</li>
+              <li class="breadcrumb-item">Transaksi</li>
+              <li class="breadcrumb-item active">Penjualan</li>
             </ol>
           </div>
         </div>
-      </div><!-- /.container-fluid -->
+      </div>
     </section>
 
-    <!-- Main content -->
     <section class="content">
       <div class="container-fluid">
         <div class="row">
@@ -31,10 +58,9 @@
               <div class="card-header p-2">
                 <ul class="nav nav-pills">
                   <li class="nav-item"><a class="nav-link active" href="#activity" data-toggle="tab">Data Penjualan</a></li>
-                  <!-- <li class="nav-item"><a class="nav-link" href="#timeline" data-toggle="tab">Pasca Operasi</a></li> -->
-                  <li class="nav-item"><a class="nav-link" href="#settings" data-toggle="tab"><i class="bi bi-plus"></i>Input Data</a></li>
+                  <li class="nav-item"><a class="nav-link" href="#settings" data-toggle="tab"><i class="bi bi-plus"></i> Input Data</a></li>
                 </ul>
-              </div><!-- /.card-header -->
+              </div>
               <div class="card-body">
                 <div class="tab-content">
                   <div class="active tab-pane" id="activity">
@@ -59,22 +85,22 @@
                       <tr>
                           <th class="text-center">NO. TRANSAKSI</th>
                           <th class="text-center">TANGGAL</th>
-                          <th class="text-center">DISKON</th>
                           <th class="text-center">CUSTOMER</th>
+                          <th class="text-center">JUMLAH ITEM</th>
+                          <th class="text-center">TOTAL DISKON</th>
+                          <th class="text-center">TOTAL</th>
                           <th class="text-center">#</th>
                       </tr>
                       </thead>
                       <tbody></tbody>
-                      <tfoot>
-                      </tfoot>
+                      <tfoot></tfoot>
                     </table>
-
 
                     <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                       <div class="modal-dialog" role="document">
                         <div class="modal-content">
                           <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLabel">Form Edit Barang</h5>
+                            <h5 class="modal-title" id="exampleModalLabel">Form Edit Detail Penjualan</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                               <span aria-hidden="true">&times;</span>
                             </button>
@@ -83,19 +109,19 @@
                             <form class="form-horizontal" id="frm-edit" name="frm-edit" method="POST" action="{{ route('edit.penjualan') }}">
                               @csrf
                               <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Barang</label>
+                                <label class="col-form-label">Barang</label>
                                 <input type="text" class="form-control" id="dt_barang" readonly>
                               </div>
                               <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Satuan</label>
+                                <label class="col-form-label">Satuan</label>
                                 <input type="text" class="form-control" id="dt_satuan" readonly>
                               </div>
                               <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">QTY</label>
+                                <label class="col-form-label">QTY</label>
                                 <input name="qty" class="form-control" id="dt_qty">
                               </div>
                               <div class="form-group">
-                                <label for="recipient-name" class="col-form-label">Diskon</label>
+                                <label class="col-form-label">Diskon</label>
                                 <input name="diskon" type="text" class="form-control" id="dt_diskon">
                               </div>
                               <div class="form-group">
@@ -113,111 +139,50 @@
                       </div>
                     </div>
                   </div>
-                  <!-- /.tab-pane -->
-                  <div class="tab-pane" id="timeline">
-                    <!-- The timeline -->
-                    <div class="timeline timeline-inverse">
-                      <!-- timeline time label -->
-                      <div class="time-label">
-                        <span class="bg-danger">
-                          10 Feb. 2014
-                        </span>
-                      </div>
-                      <!-- /.timeline-label -->
-                      <!-- timeline item -->
-                      <div>
-                        <i class="fas fa-envelope bg-primary"></i>
 
-                        <div class="timeline-item">
-                          <span class="time"><i class="far fa-clock"></i> 12:05</span>
-
-                          <h3 class="timeline-header"><a href="#">Support Team</a> sent you an email</h3>
-
-                          <div class="timeline-body">
-                            Etsy doostang zoodles disqus groupon greplin oooj voxy zoodles,
-                            weebly ning heekya handango imeem plugg dopplr jibjab, movity
-                            jajah plickers sifteo edmodo ifttt zimbra. Babblely odeo kaboodle
-                            quora plaxo ideeli hulu weebly balihoo...
-                          </div>
-                          <div class="timeline-footer">
-                            <a href="#" class="btn btn-primary btn-sm">Read more</a>
-                            <a href="#" class="btn btn-danger btn-sm">Delete</a>
-                          </div>
-                        </div>
-                      </div>
-                      <!-- END timeline item -->
-                      <!-- timeline item -->
-                      <div>
-                        <i class="fas fa-user bg-info"></i>
-
-                        <div class="timeline-item">
-                          <span class="time"><i class="far fa-clock"></i> 5 mins ago</span>
-
-                          <h3 class="timeline-header border-0"><a href="#">Sarah Young</a> accepted your friend request
-                          </h3>
-                        </div>
-                      </div>
-                      <!-- END timeline item -->
-                      <!-- timeline item -->
-                      <div>
-                        <i class="fas fa-comments bg-warning"></i>
-
-                        <div class="timeline-item">
-                          <span class="time"><i class="far fa-clock"></i> 27 mins ago</span>
-
-                          <h3 class="timeline-header"><a href="#">Jay White</a> commented on your post</h3>
-
-                          <div class="timeline-body">
-                            Take me to your leader!
-                            Switzerland is small and neutral!
-                            We are more like Germany, ambitious and misunderstood!
-                          </div>
-                          <div class="timeline-footer">
-                            <a href="#" class="btn btn-warning btn-flat btn-sm">View comment</a>
-                          </div>
-                        </div>
-                      </div>
-                      <!-- END timeline item -->
-                      <!-- timeline time label -->
-                      <div class="time-label">
-                        <span class="bg-success">
-                          3 Jan. 2014
-                        </span>
-                      </div>
-                      <!-- /.timeline-label -->
-                      <!-- timeline item -->
-                      <div>
-                        <i class="fas fa-camera bg-purple"></i>
-
-                        <div class="timeline-item">
-                          <span class="time"><i class="far fa-clock"></i> 2 days ago</span>
-
-                          <h3 class="timeline-header"><a href="#">Mina Lee</a> uploaded new photos</h3>
-
-                          <div class="timeline-body">
-                          </div>
-                        </div>
-                      </div>
-                      <!-- END timeline item -->
-                      <div>
-                        <i class="far fa-clock bg-gray"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <!-- /.tab-pane -->
-
-                  <?php
-                        date_default_timezone_set('Asia/Jakarta');
-                        $today = date('d/m/Y');
-                        // print_r($no_transaksi);
-                  ?>
+                  <?php date_default_timezone_set('Asia/Jakarta'); ?>
                   <div class="tab-pane" id="settings">
                     <form class="form-horizontal" id="frm-input" name="frm_input" method="POST" action="{{ route('input.penjualan') }}">
                       @csrf
 
-                      <!-- TOP: Tanggal/No.Transaksi/Customer/Pegawai | Pilih Barang | Total -->
+                      <!-- TOP: Pilih Barang (search box + hasil pencarian) | Tanggal/No.Transaksi/Customer/Pegawai -->
                       <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-7">
+                          <div class="card card-outline">
+                            <div class="card-body">
+                              <div class="form-group mb-0">
+                                <label><strong>Pilih Barang</strong></label>
+                                <input type="text" class="form-control form-control-lg" id="productSearchInput" placeholder="Ketik min. 3 huruf nama/kode barang, atau scan barcode" autocomplete="off">
+                                <small id="barcodeMsg" class="text-danger" style="display:none;"></small>
+
+                                <!-- Hasil pencarian barang -->
+                                <div id="productResultBox" class="border rounded mt-2" style="display:none;">
+                                  <div style="max-height:260px; overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                      <thead class="thead-light">
+                                        <tr>
+                                          <th>Kode</th>
+                                          <th>Nama Barang</th>
+                                          <th class="text-right">Harga / Satuan</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody id="productResultBody"></tbody>
+                                    </table>
+                                  </div>
+                                  <div id="productResultPaging" class="d-flex justify-content-between align-items-center border-top p-2" style="display:none;">
+                                    <small id="productResultInfo" class="text-muted"></small>
+                                    <div>
+                                      <button type="button" class="btn btn-sm btn-outline-secondary" id="productResultPrev">&laquo; Sebelumnya</button>
+                                      <button type="button" class="btn btn-sm btn-outline-secondary" id="productResultNext">Berikutnya &raquo;</button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="col-md-5">
                           <div class="card card-outline">
                             <div class="card-body">
                               <div class="form-group row mb-2">
@@ -235,12 +200,10 @@
                               <div class="form-group row mb-2">
                                 <label class="col-sm-4 col-form-label"><strong>Customer</strong></label>
                                 <div class="col-sm-8">
-                                  <select class="form-control" name="kd_customer" id="customer">
-                                    <?php
-                                      foreach ($customer as $key => $value) {
-                                        echo '<option value="'.$value->kd_customer.'">'.$value->customer.'</option>';
-                                      };
-                                    ?>
+                                  <select class="form-control" name="kd_customer" id="customer" required>
+                                    @foreach ($customer as $value)
+                                      <option value="{{ $value->kd_customer }}">{{ $value->customer }}</option>
+                                    @endforeach
                                   </select>
                                 </div>
                               </div>
@@ -250,29 +213,6 @@
                                   <input type="text" name="kd_pegawai" id="kd_pegawai" class="form-control" value="" required>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body">
-                              <div class="form-group row mb-0">
-                                <label class="col-sm-3 col-form-label"><strong>Pilih Barang</strong></label>
-                                <div class="col-sm-9">
-                                  <select class="form-control form-control-lg" id="productSelect"></select>
-                                  <small id="barcodeMsg" class="text-danger" style="display:none;"></small>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="col-md-4">
-                          <div class="card card-outline">
-                            <div class="card-body text-right">
-                              <p class="mb-1" style="font-size:18px;">Total</p>
-                              <h1 class="font-weight-bold mb-0" id="totalDisplay" style="font-size:54px;">0</h1>
                             </div>
                           </div>
                         </div>
@@ -360,6 +300,10 @@
                         <div class="col-md-4">
                           <div class="card card-outline">
                             <div class="card-body d-flex align-items-center justify-content-end" style="height: 100%;">
+                              <div class="text-right mr-4">
+                                <p class="mb-1" style="font-size:18px;">Total</p>
+                                <h1 class="font-weight-bold mb-0" id="totalDisplay" style="font-size:48px;">0</h1>
+                              </div>
                               <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save"></i> Simpan</button>
                             </div>
                           </div>
@@ -371,22 +315,17 @@
                   <!-- /.tab-pane -->
                 </div>
                 <!-- /.tab-content -->
-              </div><!-- /.card-body -->
+              </div>
             </div>
-            <!-- /.card -->
           </div>
-          <!-- /.col -->
         </div>
-        <!-- /.row -->
-      </div><!-- /.container-fluid -->
+      </div>
     </section>
-    <!-- /.content -->
   </div>
 
 @endsection
 
 @section('scripts')
-<!-- DataTables  & Plugins -->
 <script src="{{ asset('lte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
@@ -399,70 +338,41 @@
 <script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
-<!-- Page specific script -->
-
-
-
-
-
 
 <!-- SCRIPT UNTUK INPUT DATA -->
 <script>
-
 let rowCount = 0;
 
 function formatRupiah(angka) {
-    return Number(angka || 0).toLocaleString('id-ID');
+    return Number(angka || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 $(document).ready(function () {
-    $('#kd_customer').val('');
-    $('#kd_pegawai').val('');
-    $('#cash').val('');
-    $('#totalPenjualan').val('');
-    $('#kembalian').val('');
-    $('#totalPenjualanSetelahDiskon').val('');
-
-
-    $('#productSelect').select2({
-        placeholder: 'Search for a product',
-        ajax: {
-            url: '/products-list',
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                return {
-                    q: params.term
-                };
-            },
-            processResults: function (data) {
-                return {
-                    results: data.dataBarangSatuan.map(function (item) {
-                        return {
-                            id: item.kd_barang,
-                            text: item.barang + ` / ` + item.satuan,
-                            kd_barang: item.kd_barang,
-                            barang: item.barang,
-                            kd_satuan: item.kd_satuan,
-                            satuan: item.satuan,
-                            harga: item.harga_jual
-                        };
-                    })
-                };
-            },
-            cache: true
-        }
-    });
-
-    // Tambah 1 baris barang ke tabel. data: {barang, satuan, kd_barang, kd_satuan, harga}
     function addProductRow(data) {
+        let existingRow = null;
+        $('#productTable tbody tr').each(function () {
+            const barangInput = $(this).find('input[name*="[barang]"]');
+            const satuanInput = $(this).find('input[name*="[satuan]"]');
+            if (barangInput.val() === data.barang && satuanInput.val() === data.satuan) {
+                existingRow = this;
+                return false;
+            }
+        });
+
+        if (existingRow) {
+            const qtyInput = $(existingRow).find('input.qty');
+            const currentQty = parseFloat(qtyInput.val()) || 0;
+            qtyInput.val(currentQty + 1).trigger('input');
+            return;
+        }
+
         let html = `
             <tr>
                 <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
                 <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
-                <td><input class="form-control harga" type="text" name="products[${rowCount}][harga_jual]" value="${data.harga}" data-row="${rowCount}" readonly></td>
+                <td><input class="form-control harga" type="number" name="products[${rowCount}][harga_jual]" value="${data.harga}" data-row="${rowCount}" readonly></td>
                 <td><input class="form-control diskon_dt" value="0" type="number" name="products[${rowCount}][diskon_dt]" data-row="${rowCount}" required></td>
-                <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" data-row="${rowCount}" required></td>
+                <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" value="1" data-row="${rowCount}" required></td>
                 <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
                 <td class="text-center">
                     <input type="hidden" name="products[${rowCount}][kd_barang]" value="${data.kd_barang}">
@@ -473,9 +383,9 @@ $(document).ready(function () {
 
         $('#productTable tbody').append(html);
         rowCount++;
+        updateGrandTotal();
     }
 
-    // Ubah baris respons server -> bentuk yang dipakai addProductRow
     function mapServerItem(item) {
         return {
             barang: item.barang,
@@ -486,12 +396,102 @@ $(document).ready(function () {
         };
     }
 
-    $('#productSelect').on('select2:select', function (e) {
-        addProductRow(e.params.data);
-        $('#productSelect').val(null).trigger('change');
+    let productSearchTerm = '';
+    let productSearchPage = 1;
+    let productSearchTimer = null;
+    let productSearchRequest = null;
+
+    function renderProductResults(items, total, page, perPage) {
+        total = total || 0;
+        page = page || 1;
+        perPage = perPage || 10;
+
+        if (!items || !items.length) {
+            $('#productResultBody').empty().removeData('items');
+            $('#productResultPaging').hide();
+            $('#productResultBox').hide();
+            return;
+        }
+
+        let rows = items.map(function (item, idx) {
+            return `
+                <tr class="product-result-row" data-idx="${idx}" style="cursor:pointer;">
+                    <td>${item.kd_barang}</td>
+                    <td>${item.barang}</td>
+                    <td class="text-right" style="white-space:nowrap;">${formatRupiah(item.harga_jual)} / ${item.satuan}</td>
+                </tr>`;
+        }).join('');
+        $('#productResultBody').html(rows).data('items', items);
+
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        const start = (page - 1) * perPage + 1;
+        const end = Math.min(page * perPage, total);
+        $('#productResultInfo').text(`${start}-${end} dari ${total} barang`);
+        $('#productResultPrev').prop('disabled', page <= 1);
+        $('#productResultNext').prop('disabled', page >= totalPages);
+        $('#productResultPaging').show();
+
+        $('#productResultBox').show();
+    }
+
+    function fetchProductResults(term, page) {
+        productSearchTerm = term;
+        productSearchPage = page;
+        if (productSearchRequest) productSearchRequest.abort();
+        productSearchRequest = $.getJSON('/products-list', { q: term, page: page }, function (res) {
+            renderProductResults(
+                (res && res.dataBarangSatuan) ? res.dataBarangSatuan : [],
+                res ? res.total : 0,
+                res ? res.page : page,
+                res ? res.perPage : 10
+            );
+        });
+    }
+
+    $('#productResultBody').on('click', '.product-result-row', function () {
+        const items = $('#productResultBody').data('items') || [];
+        const item = items[$(this).data('idx')];
+        if (!item) return;
+        addProductRow(mapServerItem(item));
+        $('#productSearchInput').val('').trigger('focus');
     });
 
-    // ===== SCAN BARCODE (lewat kolom pencarian select2) =====
+    $('#productResultPrev').on('click', function () {
+        if (productSearchPage > 1) fetchProductResults(productSearchTerm, productSearchPage - 1);
+    });
+    $('#productResultNext').on('click', function () {
+        fetchProductResults(productSearchTerm, productSearchPage + 1);
+    });
+
+    $('#productSearchInput').on('input', function () {
+        const term = $(this).val().trim();
+        clearTimeout(productSearchTimer);
+        if (term.length > 0 && term.length < 3) {
+            productSearchTimer = setTimeout(function () {
+                fetchProductResults('', 1);
+            }, 300);
+            return;
+        }
+        productSearchTimer = setTimeout(function () {
+            fetchProductResults(term, 1);
+        }, 300);
+    });
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#productSearchInput, #productResultBox').length) {
+            $('#productResultBox').hide();
+        }
+    });
+    $('#productSearchInput').on('focus', function () {
+        if ($('#productResultBody').data('items')) {
+            $('#productResultBox').show();
+            $('#productResultPaging').show();
+        } else {
+            fetchProductResults('', 1);
+        }
+    });
+
+
     const BARCODE_URL = '/barang-by-barcode-jual';
 
     function showBarcodeMsg(text) {
@@ -500,10 +500,9 @@ $(document).ready(function () {
     }
 
     function openPicker() {
-        try { $('#productSelect').select2('open'); } catch (e) {}
+        try { $('#productSearchInput').trigger('focus'); } catch (e) {}
     }
 
-    // Tampilkan pilihan satuan kalau 1 barcode punya >1 satuan
     function showSatuanPicker(rows) {
         $('#satuanPickerBarang').text(rows[0].barang);
         let body = '<div class="list-group">';
@@ -527,17 +526,17 @@ $(document).ready(function () {
     });
     $('#satuanPickerModal').on('hidden.bs.modal', function () { openPicker(); });
 
-    // Proses kode barcode hasil scan
     function handleBarcode(term, field) {
         $.getJSON(BARCODE_URL, { barcode: term }, function (res) {
             const rows = (res && res.dataBarangSatuan) ? res.dataBarangSatuan : [];
             if (rows.length === 1) {
                 addProductRow(mapServerItem(rows[0]));
-                $('#productSelect').val(null).trigger('change');
-                $('#productSelect').select2('close');
+                $('#productSearchInput').val('');
+                renderProductResults([]);
                 setTimeout(openPicker, 60);
             } else if (rows.length > 1) {
-                $('#productSelect').select2('close');
+                $('#productSearchInput').val('');
+                renderProductResults([]);
                 showSatuanPicker(rows);
             } else {
                 showBarcodeMsg('Barcode "' + term + '" tidak ditemukan.');
@@ -546,25 +545,30 @@ $(document).ready(function () {
         }).fail(function () { showBarcodeMsg('Gagal mencari barcode.'); });
     }
 
-    // Intercept Enter di kolom pencarian select2 (angka -> barcode, teks -> select2 biasa)
     const BARCODE_RE = /^\+?\d{6,}$/;
-    $('#productSelect').on('select2:open', function () {
-        const field = document.querySelector('.select2-container--open .select2-search__field');
-        if (!field || field.dataset.barcodeBound) return;
-        field.dataset.barcodeBound = '1';
-        field.addEventListener('keydown', function (e) {
-            if (e.key !== 'Enter' && e.keyCode !== 13) return;
-            const term = field.value.trim();
-            if (!term || !BARCODE_RE.test(term)) return;
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            handleBarcode(term, field);
-        }, true);
+    $('#productSearchInput').on('keydown', function (e) {
+        if (e.key !== 'Enter' && e.keyCode !== 13) return;
+        const term = $(this).val().trim();
+        if (!term) return;
+        e.preventDefault();
+        if (BARCODE_RE.test(term)) {
+            handleBarcode(term, this);
+            return;
+        }
+        const items = $('#productResultBody').data('items') || [];
+        if (items.length) {
+            addProductRow(mapServerItem(items[0]));
+            $(this).val('');
+            renderProductResults([]);
+        }
     });
 
-    $('a[href="#settings"]').on('shown.bs.tab', function () { openPicker(); });
+    $('a[href="#settings"]').on('show.bs.tab', function (e) {
+        if ($(e.target).attr('href') === '#settings') {
+            setTimeout(function () { openPicker(); }, 100);
+        }
+    });
 
-    // Recalculate row + grand total when qty or diskon changes
     $('#productTable').on('input', '.qty, .diskon_dt', function () {
         let row = $(this).data('row');
         let qty = parseFloat($(`input.qty[data-row="${row}"]`).val()) || 0;
@@ -576,7 +580,6 @@ $(document).ready(function () {
         updateGrandTotal();
     });
 
-    // Calculate grand total
     function updateGrandTotal() {
         let grandTotal = 0;
         $('.total_harga').each(function () {
@@ -590,27 +593,74 @@ $(document).ready(function () {
         $('#totalDisplay').text(formatRupiah(grandAfter));
     }
 
-    // Master discount
     $('#masterDiskon').on('input change', function () {
         updateGrandTotal();
     });
 
-    // Cash -> Kembalian
     $('#cash').on('blur input', function () {
         let cash = parseFloat($('#cash').val()) || 0;
         let grandAfter = parseFloat($('#totalPenjualanSetelahDiskon').val()) || 0;
         $('#kembalian').val(cash - grandAfter);
     });
 
-    // Remove row
     $('#productTable').on('click', '.removeRow', function () {
         $(this).closest('tr').remove();
         updateGrandTotal();
     });
+
+    $('#frm-input').on('submit', function (e) {
+        e.preventDefault();
+        const $form = $(this);
+        const $btn = $form.find('button[type="submit"]');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: $form.attr('action'),
+            type: 'POST',
+            data: $form.serialize(),
+            success: function (res) {
+                if (!res || res.success === false) {
+                    alert((res && res.message) || 'Gagal menyimpan penjualan.');
+                    $btn.prop('disabled', false);
+                    return;
+                }
+
+                $form[0].reset();
+                $('#productTable tbody').empty();
+                rowCount = 0;
+                updateGrandTotal();
+
+                $('a[href="#activity"]').tab('show');
+
+                setTimeout(function () {
+                    const $table = $('#example2');
+                    if ($.fn.dataTable.isDataTable('#example2')) {
+                        $table.DataTable().ajax.reload(null, false);
+                    }
+                }, 500);
+
+                const now = new Date();
+                const ymd = now.getFullYear().toString().slice(-2) +
+                           String(now.getMonth() + 1).padStart(2, '0') +
+                           String(now.getDate()).padStart(2, '0');
+                const currentNo = $('#no_transaksi').val();
+                const lastNum = parseInt(currentNo.slice(-4)) + 1;
+                const newNo = 'JJ' + ymd + String(lastNum).padStart(4, '0');
+                $('#no_transaksi').val(newNo);
+
+                $('#productSearchInput').trigger('focus');
+
+                $btn.prop('disabled', false);
+            },
+            error: function (xhr) {
+                const res = xhr.responseJSON;
+                alert((res && res.message) || 'Gagal menyimpan penjualan.');
+                $btn.prop('disabled', false);
+            }
+        });
+    });
 });
-
 </script>
-
 
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
@@ -646,9 +696,11 @@ $(document).ready(function () {
     },
     columns: [
       { data: 'no_transaksi', className: 'text-center' },
-      { data: 'tanggal_penjualan', className: 'text-center' },
-      { data: 'diskon', className: 'text-center' },
+      { data: 'tanggal', className: 'text-center' },
       { data: 'customer', className: 'text-center' },
+      { data: 'jumlah_item', className: 'text-center' },
+      { data: 'total_diskon', className: 'text-right', render: function(data) { const val = parseFloat(String(data).replace(',', '.')) || 0; return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } },
+      { data: 'total', className: 'text-right', render: function(data) { const val = parseFloat(String(data).replace(',', '.')) || 0; return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } },
       {
         data: null,
         orderable: false,
@@ -665,24 +717,17 @@ $(document).ready(function () {
     }
   });
 
-  // Filter tanggal
-  $('#btn_filter').on('click', function () {
-    table.ajax.reload();
-  });
+  $('#btn_filter').on('click', function () { table.ajax.reload(); });
   $('#btn_reset_filter').on('click', function () {
     $('#filter_from').val('');
     $('#filter_to').val('');
     table.ajax.reload();
   });
-  $('#filter_from, #filter_to').on('change', function () {
-    table.ajax.reload();
-  });
+  $('#filter_from, #filter_to').on('change', function () { table.ajax.reload(); });
 
-
-    // Build & render the detail child row for a transaction
-    function loadDetailPenjualan(row, tr, btn) {
-      const noTransaksi = tr.data('notransaksi');
-      return $.ajax({
+  function loadDetailPenjualan(row, tr, btn) {
+    const noTransaksi = tr.data('notransaksi');
+    return $.ajax({
         url: '/detail-penjualan',
         type: 'GET',
         data: { no_transaksi: noTransaksi },
@@ -697,17 +742,18 @@ $(document).ready(function () {
                 <td class="text-right">${formatRupiah(item.diskon)}</td>
                 <td class="text-center">
                   <button class="btn btn-warning btn-sm edit_detail"
-                  data-diskon="${item.diskon}"
-                  data-qty="${item.qty}"
-                  data-transaksi="${noTransaksi}"
-                  data-kd_barang="${item.kd_barang}"
-                  data-barang="${item.barang}"
-                  data-kd_satuan="${item.kd_satuan}"
-                  data-satuan="${item.satuan}"
-                  type="button"
-                  data-toggle="modal"
-                  data-target="#exampleModal">
-                  <i class="bi bi-pencil"></i> Edit</button>
+                    data-diskon="${item.diskon}"
+                    data-qty="${item.qty}"
+                    data-transaksi="${noTransaksi}"
+                    data-kd_barang="${item.kd_barang}"
+                    data-barang="${item.barang}"
+                    data-kd_satuan="${item.kd_satuan}"
+                    data-satuan="${item.satuan}"
+                    type="button"
+                    data-toggle="modal"
+                    data-target="#exampleModal">
+                    <i class="bi bi-pencil"></i> Edit
+                  </button>
                 </td>
               </tr>
             `;
@@ -732,9 +778,7 @@ $(document).ready(function () {
                         <th class="text-center">#</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      ${detailRows}
-                    </tbody>
+                    <tbody>${detailRows}</tbody>
                   </table>
                 </div>
               </div>
@@ -745,98 +789,86 @@ $(document).ready(function () {
           tr.addClass('shown');
           if (btn) btn.html('<i class="bi bi-eye-slash"></i> Sembunyi');
         },
-        error: function () {
-          alert('Gagal mengambil data detail.');
-        }
+        error: function () { alert('Gagal mengambil data detail.'); }
       });
+  }
+
+  $('#example2 tbody').on('click', '.toggle-child', function () {
+    const tr = $(this).closest('tr');
+    const row = table.row(tr);
+    const btn = $(this);
+
+    if (row.child.isShown()) {
+      row.child.hide();
+      tr.removeClass('shown');
+      btn.html('<i class="bi bi-eye"></i> Lihat');
+    } else {
+      loadDetailPenjualan(row, tr, btn);
     }
+  });
 
-    $('#example2 tbody').on('click', '.toggle-child', function () {
-      const tr = $(this).closest('tr');
-      const row = table.row(tr);
-      const btn = $(this);
-
-      if (row.child.isShown()) {
-        row.child.hide();
-        tr.removeClass('shown');
-        btn.html('<i class="bi bi-eye"></i> Lihat');
-      } else {
-        loadDetailPenjualan(row, tr, btn);
+  $('#example2 tbody').on('click', '.hapus-transaksi', function () {
+    const noTransaksi = $(this).data('notransaksi');
+    if (!confirm('Hapus transaksi ' + noTransaksi + ' beserta seluruh detailnya? Tindakan ini tidak dapat dibatalkan.')) {
+      return;
+    }
+    const $btn = $(this);
+    $btn.prop('disabled', true);
+    $.ajax({
+      url: "{{ route('hapus.penjualan') }}",
+      type: 'POST',
+      data: { no_transaksi: noTransaksi, _token: '{{ csrf_token() }}' },
+      success: function (res) {
+        if (res && res.success === false) {
+          alert(res.message || 'Gagal menghapus transaksi.');
+          $btn.prop('disabled', false);
+          return;
+        }
+        table.ajax.reload(null, false);
+      },
+      error: function () {
+        alert('Gagal menghapus transaksi.');
+        $btn.prop('disabled', false);
       }
     });
+  });
 
-    // Hapus transaksi penjualan (header + detail) via AJAX
-    $('#example2 tbody').on('click', '.hapus-transaksi', function () {
-      const noTransaksi = $(this).data('notransaksi');
-      if (!confirm('Hapus transaksi ' + noTransaksi + ' beserta seluruh detailnya? Tindakan ini tidak dapat dibatalkan.')) {
-        return;
+  $('#example2 tbody').on('click', '.edit_detail', function () {
+    $('#dt_barang').val($(this).data('barang'));
+    $('#dt_satuan').val($(this).data('satuan'));
+    $('#dt_kd_barang').val($(this).data('kd_barang'));
+    $('#dt_kd_satuan').val($(this).data('kd_satuan'));
+    $('#dt_no_transaksi').val($(this).data('transaksi'));
+    $('#dt_diskon').val($(this).data('diskon'));
+    $('#dt_qty').val($(this).data('qty'));
+  });
+
+  $('#frm-edit').on('submit', function (e) {
+    e.preventDefault();
+    const noTransaksi = $('#dt_no_transaksi').val();
+    const $btn = $(this).find('button[type="submit"]');
+    $btn.prop('disabled', true);
+
+    $.ajax({
+      url: $(this).attr('action'),
+      type: 'POST',
+      data: $(this).serialize(),
+      success: function () {
+        $('#exampleModal').modal('hide');
+        const tr = $('#example2 tbody tr.data-row[data-notransaksi="' + noTransaksi + '"]');
+        const row = table.row(tr);
+        if (row.node()) {
+          loadDetailPenjualan(row, tr, tr.find('.toggle-child'));
+        }
+      },
+      error: function () {
+        alert('Gagal menyimpan perubahan.');
+      },
+      complete: function () {
+        $btn.prop('disabled', false);
       }
-      const $btn = $(this);
-      $btn.prop('disabled', true);
-      $.ajax({
-        url: "{{ route('hapus.penjualan') }}",
-        type: 'POST',
-        data: { no_transaksi: noTransaksi, _token: '{{ csrf_token() }}' },
-        success: function (res) {
-          if (res && res.success === false) {
-            alert(res.message || 'Gagal menghapus transaksi.');
-            $btn.prop('disabled', false);
-            return;
-          }
-          table.ajax.reload(null, false);
-        },
-        error: function () {
-          alert('Gagal menghapus transaksi.');
-          $btn.prop('disabled', false);
-        }
-      });
     });
-
-    // Isi form modal saat tombol Edit diklik (delegated, tidak rebinding)
-    $('#example2 tbody').on('click', '.edit_detail', function () {
-      $('#dt_barang').val($(this).data('barang'));
-      $('#dt_satuan').val($(this).data('satuan'));
-      $('#dt_kd_barang').val($(this).data('kd_barang'));
-      $('#dt_kd_satuan').val($(this).data('kd_satuan'));
-      $('#dt_no_transaksi').val($(this).data('transaksi'));
-      $('#dt_diskon').val($(this).data('diskon'));
-      $('#dt_qty').val($(this).data('qty'));
-    });
-
-    // Submit form edit via AJAX supaya halaman tidak reload & detail tetap terbuka
-    $('#frm-edit').on('submit', function (e) {
-      e.preventDefault();
-      const noTransaksi = $('#dt_no_transaksi').val();
-      const $btn = $(this).find('button[type="submit"]');
-      $btn.prop('disabled', true);
-
-      $.ajax({
-        url: $(this).attr('action'),
-        type: 'POST',
-        data: $(this).serialize(),
-        success: function () {
-          $('#exampleModal').modal('hide');
-          // Refresh hanya detail yang sedang terbuka, tanpa reload halaman
-          const tr = $('#example2 tbody tr.data-row[data-notransaksi="' + noTransaksi + '"]');
-          const row = table.row(tr);
-          if (row.node()) {
-            loadDetailPenjualan(row, tr, tr.find('.toggle-child'));
-          }
-        },
-        error: function () {
-          alert('Gagal menyimpan perubahan.');
-        },
-        complete: function () {
-          $btn.prop('disabled', false);
-        }
-      });
-    });
+  });
 </script>
-
-
-
-
-
-
 
 @endsection

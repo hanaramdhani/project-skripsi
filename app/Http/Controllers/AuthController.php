@@ -115,4 +115,29 @@ class AuthController extends Controller
             'new_password'   => $newPassword,
         ]);
     }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password'     => 'required|string|min:6|confirmed',
+        ], [], [
+            'new_password' => 'password baru',
+        ]);
+
+        $kdUser = session('user.kd_user');
+
+        $rows = DB::select("SELECT kd_user, password FROM m_user WHERE kd_user = ?", [$kdUser]);
+
+        if (empty($rows) || !Hash::check($request->current_password, $rows[0]->password)) {
+            return back()
+                ->withErrors(['current_password' => 'Password lama salah.'], 'changePassword')
+                ->with('open_change_password_modal', true);
+        }
+
+        DB::update("UPDATE m_user SET password = ? WHERE kd_user = ?",
+                   [Hash::make($request->new_password), $kdUser]);
+
+        return back()->with('status', 'Password berhasil diubah.');
+    }
 }

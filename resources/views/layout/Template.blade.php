@@ -173,6 +173,10 @@
               {{ $sessionUser['keterangan'] }}
             </span>
             <div class="dropdown-divider"></div>
+            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#modalChangePassword">
+              <i class="fas fa-key mr-2"></i> Ganti Password
+            </button>
+            <div class="dropdown-divider"></div>
             <form action="{{ route('logout') }}" method="POST" class="m-0">
               @csrf
               <button type="submit" class="dropdown-item">
@@ -462,6 +466,48 @@
     <!-- Control sidebar content goes here -->
   </aside>
   <!-- /.control-sidebar -->
+  <!-- Modal Ganti Password -->
+  <div class="modal fade" id="modalChangePassword" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ganti Password</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <form method="POST" action="{{ route('change.password') }}">
+          @csrf
+          <div class="modal-body">
+            @if ($errors->changePassword->any())
+              <div class="alert alert-danger">
+                <ul class="mb-0">
+                  @foreach ($errors->changePassword->all() as $error)
+                    <li>{{ $error }}</li>
+                  @endforeach
+                </ul>
+              </div>
+            @endif
+            <div class="form-group">
+              <label>Password Lama</label>
+              <input name="current_password" type="password" class="form-control" required autocomplete="current-password">
+            </div>
+            <div class="form-group">
+              <label>Password Baru</label>
+              <input name="new_password" type="password" class="form-control" required minlength="6" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label>Konfirmasi Password Baru</label>
+              <input name="new_password_confirmation" type="password" class="form-control" required minlength="6" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Kembali</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-key mr-1"></i> Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </div>
 <!-- ./wrapper -->
 
@@ -499,6 +545,27 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+@if ($errors->changePassword->any())
+  <script>
+    $(function () { $('#modalChangePassword').modal('show'); });
+  </script>
+@endif
+
+@if (session('status'))
+  <div class="toast align-items-center border-0 bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true"
+       style="position: fixed; top: 70px; right: 20px; z-index: 9999; min-width: 260px;" data-delay="4000" id="toastStatus">
+    <div class="d-flex">
+      <div class="toast-body">{{ session('status') }}</div>
+      <button type="button" class="close mr-2 m-auto text-white" data-dismiss="toast" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </div>
+  <script>
+    $(function () { $('#toastStatus').toast('show'); });
+  </script>
+@endif
 
 @yield('scripts')
 @stack('scripts')

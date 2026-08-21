@@ -59,6 +59,9 @@ Route::middleware('auth.user')->group(function () {
 
     Route::post('/send-message', [viewController::class, 'sendMessage'])->name('send.message');
 
+    // ganti password
+    Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password');
+
     // penjualan
     Route::get('/penjualan', [controllerPenjualan::class,'viewPenjualan'])->name('index.penjualan');
     Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
@@ -93,6 +96,7 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/barang', [controllerBarang::class,'viewMasterBarang'])->name('index.master.barang');
     Route::get('/data-barang', [controllerBarang::class,'getDataBarang'])->name('data.master.barang');
     Route::post('/input-master-barang', [controllerBarang::class, 'inputBarang'])->name('input.master.barang');
+    Route::post('/barang-cepat', [controllerBarang::class, 'inputBarangCepat'])->name('input.barang.cepat');
     Route::post('/edit-master-barang', [controllerBarang::class, 'editBarang'])->name('edit.master.barang');
     Route::post('/hapus-master-barang', [controllerBarang::class, 'hapusBarang'])->name('hapus.master.barang');
 
@@ -151,7 +155,6 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/biaya', [controllerBiaya::class,'viewMasterBiaya'])->name('index.master.biaya');
     Route::get('/data-biaya', [controllerBiaya::class,'getDataBiaya'])->name('data.master.biaya');
     Route::post('/input-master-biaya', [controllerBiaya::class, 'inputBiaya'])->name('input.master.biaya');
-    Route::get('/get-akun-biaya', [controllerBiaya::class, 'editGetAkun'])->name('edit.master.biaya.akun');
     Route::post('/edit-master-biaya', [controllerBiaya::class, 'editBiaya'])->name('edit.master.biaya');
     Route::post('/hapus-master-biaya', [controllerBiaya::class, 'hapusBiaya'])->name('hapus.master.biaya');
 
@@ -159,7 +162,6 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/pendapatan', [controllerPendapatan::class,'viewMasterPendapatan'])->name('index.master.pendapatan');
     Route::get('/data-pendapatan', [controllerPendapatan::class,'getDataPendapatan'])->name('data.master.pendapatan');
     Route::post('/input-master-pendapatan', [controllerPendapatan::class, 'inputPendapatan'])->name('input.master.pendapatan');
-    Route::get('/get-akun-pendapatan', [controllerPendapatan::class, 'editGetAkun'])->name('edit.master.pendapatan.akun');
     Route::post('/edit-master-pendapatan', [controllerPendapatan::class, 'editPendapatan'])->name('edit.master.pendapatan');
     Route::post('/hapus-master-pendapatan', [controllerPendapatan::class, 'hapusPendapatan'])->name('hapus.master.pendapatan');
 
