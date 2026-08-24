@@ -236,8 +236,11 @@ class LaporanController extends Controller
         }
         $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
 
+        $t0 = microtime(true);
         $recordsTotal    = DB::select("SELECT COUNT(*) AS c FROM v_stok_barang")[0]->c;
+        $t1 = microtime(true);
         $recordsFiltered = DB::select("SELECT COUNT(*) AS c FROM v_stok_barang $whereSql", $bindings)[0]->c;
+        $t2 = microtime(true);
 
         $sql = "SELECT kd_barang, nama, stok, satuan_terkecil, ROUND(harga_beli, 2) AS harga_beli
                 FROM v_stok_barang
@@ -246,6 +249,13 @@ class LaporanController extends Controller
                 OFFSET $start ROWS FETCH NEXT $length ROWS ONLY";
 
         $data = DB::select($sql, $bindings);
+        $t3 = microtime(true);
+
+        \Illuminate\Support\Facades\Log::info('LaporanStok timing', [
+            'count_total_s'    => round($t1 - $t0, 3),
+            'count_filtered_s' => round($t2 - $t1, 3),
+            'select_data_s'    => round($t3 - $t2, 3),
+        ]);
 
         foreach ($data as $row) {
             $row->harga_beli = (float) round((float) $row->harga_beli, 2);
