@@ -445,6 +445,9 @@ $(document).ready(function () {
             </tr>`;
 
         $('#productTable tbody').append(html);
+        const qty = parseFloat(data.qty) || 1;
+        const harga = parseFloat(data.harga) || 0;
+        $(`input.total_harga[data-row="${rowCount}"]`).val(qty * harga);
         rowCount++;
         updateGrandTotal();
     }
