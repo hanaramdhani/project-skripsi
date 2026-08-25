@@ -44,10 +44,10 @@
           </div>
         </div>
         <div class="input-group mb-3">
-          <input type="password" name="password" class="form-control" placeholder="Password" required>
+          <input type="password" name="password" id="password" class="form-control" placeholder="Password" required>
           <div class="input-group-append">
-            <div class="input-group-text">
-              <span class="fas fa-lock"></span>
+            <div class="input-group-text" id="togglePassword" style="cursor: pointer;">
+              <span class="fas fa-lock" id="togglePasswordIcon"></span>
             </div>
           </div>
         </div>
@@ -70,5 +70,15 @@
 <script src="{{ asset('lte/plugins/jquery/jquery.min.js') }}"></script>
 <script src="{{ asset('lte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('lte/dist/js/adminlte.min.js') }}"></script>
+<script>
+  document.getElementById('togglePassword').addEventListener('click', function () {
+    const passwordInput = document.getElementById('password');
+    const icon = document.getElementById('togglePasswordIcon');
+    const isPassword = passwordInput.getAttribute('type') === 'password';
+    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+    icon.classList.toggle('fa-lock', !isPassword);
+    icon.classList.toggle('fa-lock-open', isPassword);
+  });
+</script>
 </body>
 </html>
