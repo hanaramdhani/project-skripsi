@@ -166,14 +166,14 @@
 
                                 <!-- Hasil pencarian barang -->
                                 <div id="productResultBox" class="border rounded mt-2" style="display:none;">
-                                  <div style="max-height:260px; overflow-y:auto;">
+                                  <div style="max-height:260px; overflow-y:auto; overflow-x:auto;">
                                     <table class="table table-sm table-hover mb-0">
                                       <thead class="thead-light">
                                         <tr>
                                           <th>Kode</th>
                                           <th>Nama Barang</th>
-                                          <th class="text-right">Harga Jual / Satuan</th>
-                                          <th class="text-right">Harga Beli Terakhir / Satuan</th>
+                                          <th class="text-right" style="white-space:nowrap;">Harga Jual / Satuan</th>
+                                          <th class="text-right" style="white-space:nowrap;">Harga Beli Terakhir / Satuan</th>
                                         </tr>
                                       </thead>
                                       <tbody id="productResultBody"></tbody>
@@ -251,6 +251,7 @@
                                 <th class="text-center">Satuan</th>
                                 <th class="text-center">Harga Beli</th>
                                 <th class="text-center">Diskon</th>
+                                <th class="text-center" style="width:70px;">Mode</th>
                                 <th class="text-center">Qty</th>
                                 <th class="text-center">Total</th>
                                 <th class="text-center" style="width:120px;">#</th>
@@ -382,6 +383,39 @@
     </div>
   </div>
 
+  <!-- Modal konfirmasi perubahan harga beli / harga jual sebelum simpan pembelian -->
+  <div class="modal fade" id="konfirmasiHargaModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Konfirmasi Perubahan Harga Beli</h5>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted mb-2">Harga beli terakhir untuk barang berikut berubah dibandingkan transaksi sebelumnya (sudah memperhitungkan diskon &amp; pajak). Centang "Ubah Harga Jual" jika ingin menyesuaikan harga jualnya sekaligus.</p>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle" id="tabelKonfirmasiHarga">
+              <thead class="thead-light">
+                <tr>
+                  <th>Barang</th>
+                  <th class="text-right">Harga Beli Lama</th>
+                  <th class="text-right">Harga Beli Baru</th>
+                  <th class="text-right">Harga Jual Saat Ini</th>
+                  <th class="text-center">Ubah Harga Jual</th>
+                  <th class="text-right">Harga Jual Baru</th>
+                </tr>
+              </thead>
+              <tbody id="tabelKonfirmasiHargaBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnBatalKonfirmasiHarga">Batal</button>
+          <button type="button" class="btn btn-primary" id="btnLanjutkanKonfirmasiHarga">Lanjutkan Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 @endsection
 
 @section('scripts')
@@ -403,7 +437,7 @@
 let rowCount = 0;
 
 function formatRupiah(angka) {
-    return Number(angka || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return Number(angka || 0).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 $(document).ready(function () {
@@ -433,8 +467,15 @@ $(document).ready(function () {
             <tr>
                 <td><input class="form-control" type="text" name="products[${rowCount}][barang]" value="${data.barang}" readonly></td>
                 <td><input class="form-control" type="text" name="products[${rowCount}][satuan]" value="${data.satuan}" readonly></td>
-                <td><input class="form-control harga" type="number" name="products[${rowCount}][harga_beli]" value="${data.harga}" data-row="${rowCount}" required></td>
-                <td><input class="form-control diskon_dt" value="0" type="number" name="products[${rowCount}][diskon_dt]" data-row="${rowCount}" required></td>
+                <td><input class="form-control harga" type="number" name="products[${rowCount}][harga_beli]" value="${(Math.round((parseFloat(data.harga) || 0) * 100) / 100)}" data-row="${rowCount}" required></td>
+                <td><input class="form-control diskon_dt" value="0" type="number" step="1" min="0" name="products[${rowCount}][diskon_dt]" data-row="${rowCount}" required></td>
+                <td class="text-center">
+                    <div class="btn-group btn-group-toggle" role="group">
+                        <button type="button" class="btn btn-sm btn-primary btn-mode-diskon active" data-row="${rowCount}" data-mode="N">N</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-mode-diskon" data-row="${rowCount}" data-mode="%">%</button>
+                    </div>
+                    <input type="hidden" class="diskon_mode" name="products[${rowCount}][diskon_mode]" value="N" data-row="${rowCount}">
+                </td>
                 <td><input class="form-control qty" type="number" name="products[${rowCount}][qty]" value="1" data-row="${rowCount}" required></td>
                 <td><input class="form-control total_harga" type="text" name="products[${rowCount}][total]" data-row="${rowCount}" readonly></td>
                 <td class="text-center">
@@ -490,7 +531,7 @@ $(document).ready(function () {
                     <td>${item.kd_barang}</td>
                     <td>${item.barang}</td>
                     <td class="text-right" style="white-space:nowrap;">${formatRupiah(item.harga_jual)} / ${item.satuan}</td>
-                    <td class="text-right" style="white-space:nowrap;">${formatRupiah(item.harga_beli)} / ${item.satuan_terkecil || '-'}</td>
+                    <td class="text-right" style="white-space:nowrap;">${formatRupiah(item.harga_beli)} / ${item.satuan}</td>
                 </tr>`;
         }).join('');
         $('#productResultBody').html(rows).data('items', items);
@@ -733,15 +774,63 @@ $(document).ready(function () {
         }
     });
 
-    // Recalculate row + grand total when qty/diskon/harga changes
-    $('#productTable').on('input', '.qty, .diskon_dt, .harga', function () {
-        let row = $(this).data('row');
+    // Hitung total 1 baris sesuai mode diskon (N = nominal, % = desimal 0..1)
+    function hitungTotalBaris(row) {
         let qty = parseFloat($(`input.qty[data-row="${row}"]`).val()) || 0;
         let diskon_dt = parseFloat($(`input.diskon_dt[data-row="${row}"]`).val()) || 0;
         let harga = parseFloat($(`input.harga[data-row="${row}"]`).val()) || 0;
-        let total = (qty * harga) - (diskon_dt * qty);
-        $(`input.total_harga[data-row="${row}"]`).val(total);
+        let mode = $(`input.diskon_mode[data-row="${row}"]`).val() || 'N';
 
+        let hargaSetelahDiskon = mode === '%'
+            ? (harga - (harga * diskon_dt))
+            : (harga - diskon_dt);
+
+        let total = hargaSetelahDiskon * qty;
+        $(`input.total_harga[data-row="${row}"]`).val(total);
+    }
+
+    // Switch mode diskon per baris: N (nominal, min 0) atau % (desimal 0..1)
+    $('#productTable').on('click', '.btn-mode-diskon', function () {
+        let $btn = $(this);
+        let row = $btn.data('row');
+        let modeBaru = $btn.data('mode');
+        let $modeInput = $(`input.diskon_mode[data-row="${row}"]`);
+        let $diskonInput = $(`input.diskon_dt[data-row="${row}"]`);
+
+        if ($modeInput.val() === modeBaru) {
+            return;
+        }
+
+        $modeInput.val(modeBaru);
+
+        $btn.closest('.btn-group').find('.btn-mode-diskon').each(function () {
+            let aktif = $(this).data('mode') === modeBaru;
+            $(this).toggleClass('btn-primary active', aktif).toggleClass('btn-outline-primary', !aktif);
+        });
+
+        if (modeBaru === '%') {
+            $diskonInput.attr({ step: '0.01', min: '0', max: '1' }).val(0);
+        } else {
+            $diskonInput.attr({ step: '1', min: '0' }).removeAttr('max').val(0);
+        }
+
+        hitungTotalBaris(row);
+        updateGrandTotal();
+    });
+
+    // Recalculate row + grand total when qty/diskon/harga changes
+    $('#productTable').on('input', '.qty, .diskon_dt, .harga', function () {
+        let row = $(this).data('row');
+
+        // Validasi: mode % dibatasi 0..1
+        if ($(this).hasClass('diskon_dt') && $(`input.diskon_mode[data-row="${row}"]`).val() === '%') {
+            let val = parseFloat($(this).val());
+            if (isNaN(val)) val = 0;
+            if (val > 1) $(this).val(1);
+            if (val < 0) $(this).val(0);
+        }
+
+        hitungTotalBaris(row);
         updateGrandTotal();
     });
 
@@ -784,33 +873,15 @@ $(document).ready(function () {
         updateGrandTotal();
     });
 
-    // Submit form pembelian via AJAX, hanya reload tab data pembelian
-    $('#frm-input').on('submit', function (e) {
-        e.preventDefault();
-        const $form = $(this);
-        const $btn = $form.find('button[type="submit"]');
-
-        // Validasi: cek ada item dengan harga beli 0
-        let hasZeroPrice = false;
-        $('#productTable tbody tr').each(function () {
-            const harga = parseFloat($(this).find('input.harga').val()) || 0;
-            if (harga === 0) {
-                hasZeroPrice = true;
-                return false;
-            }
-        });
-
-        if (hasZeroPrice) {
-            alert('Mohon isi harga beli untuk semua item. Ada item dengan harga beli 0.');
-            return;
-        }
-
-        $btn.prop('disabled', true);
+    // Simpan pembelian via AJAX (dipanggil langsung atau setelah konfirmasi perubahan harga)
+    function simpanPembelian($form, $btn, updateHargaJualList) {
+        const formData = $form.serialize() +
+            (updateHargaJualList && updateHargaJualList.length ? '&' + $.param({ update_harga_jual: updateHargaJualList }) : '');
 
         $.ajax({
             url: $form.attr('action'),
             type: 'POST',
-            data: $form.serialize(),
+            data: formData,
             success: function (res) {
                 if (!res || res.success === false) {
                     alert((res && res.message) || 'Gagal menyimpan pembelian.');
@@ -858,6 +929,106 @@ $(document).ready(function () {
                 $btn.prop('disabled', false);
             }
         });
+    }
+
+    function bangunBarisKonfirmasiHarga(items) {
+        const $body = $('#tabelKonfirmasiHargaBody');
+        $body.empty();
+
+        items.forEach(function (item, idx) {
+            const $row = $(`
+                <tr data-idx="${idx}" data-kd-barang="${item.kd_barang}" data-kd-satuan="${item.kd_satuan}">
+                    <td>${item.nama_barang}</td>
+                    <td class="text-right">${item.harga_beli_lama !== null ? formatRupiah(item.harga_beli_lama) : '-'}</td>
+                    <td class="text-right">${formatRupiah(item.harga_beli_baru)}</td>
+                    <td class="text-right harga-jual-saat-ini">${formatRupiah(item.harga_jual)}</td>
+                    <td class="text-center">
+                        <input type="checkbox" class="chk-ubah-harga-jual">
+                    </td>
+                    <td class="text-right">
+                        <input type="number" class="form-control form-control-sm input-harga-jual-baru text-right"
+                               value="${item.harga_jual}" min="0" disabled>
+                    </td>
+                </tr>
+            `);
+            $body.append($row);
+        });
+    }
+
+    $(document).on('change', '.chk-ubah-harga-jual', function () {
+        const $input = $(this).closest('tr').find('.input-harga-jual-baru');
+        $input.prop('disabled', !this.checked);
+        if (this.checked) {
+            $input.trigger('focus');
+        }
+    });
+
+    // Submit form pembelian: cek dulu perubahan harga beli sebelum benar-benar simpan
+    $('#frm-input').on('submit', function (e) {
+        e.preventDefault();
+        const $form = $(this);
+        const $btn = $form.find('button[type="submit"]');
+
+        // Validasi: cek ada item dengan harga beli 0
+        let hasZeroPrice = false;
+        $('#productTable tbody tr').each(function () {
+            const harga = parseFloat($(this).find('input.harga').val()) || 0;
+            if (harga === 0) {
+                hasZeroPrice = true;
+                return false;
+            }
+        });
+
+        if (hasZeroPrice) {
+            alert('Mohon isi harga beli untuk semua item. Ada item dengan harga beli 0.');
+            return;
+        }
+
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: "{{ route('cek.harga.pembelian') }}",
+            type: 'POST',
+            data: $form.serialize(),
+            success: function (cek) {
+                if (cek && cek.ada_perubahan && cek.items.length) {
+                    bangunBarisKonfirmasiHarga(cek.items);
+                    $('#konfirmasiHargaModal').modal('show');
+                } else {
+                    simpanPembelian($form, $btn, []);
+                }
+            },
+            error: function () {
+                // Jika pengecekan gagal, tetap lanjutkan simpan seperti biasa
+                simpanPembelian($form, $btn, []);
+            }
+        });
+    });
+
+    $('#btnBatalKonfirmasiHarga').on('click', function () {
+        $('#konfirmasiHargaModal').modal('hide');
+        $('#frm-input').find('button[type="submit"]').prop('disabled', false);
+    });
+
+    $('#btnLanjutkanKonfirmasiHarga').on('click', function () {
+        const updateHargaJualList = [];
+
+        $('#tabelKonfirmasiHargaBody tr').each(function () {
+            const $row = $(this);
+            if ($row.find('.chk-ubah-harga-jual').is(':checked')) {
+                updateHargaJualList.push({
+                    kd_barang: $row.data('kd-barang'),
+                    kd_satuan: $row.data('kd-satuan'),
+                    harga_jual: parseFloat($row.find('.input-harga-jual-baru').val()) || 0,
+                });
+            }
+        });
+
+        $('#konfirmasiHargaModal').modal('hide');
+
+        const $form = $('#frm-input');
+        const $btn = $form.find('button[type="submit"]');
+        simpanPembelian($form, $btn, updateHargaJualList);
     });
 });
 </script>
@@ -867,7 +1038,7 @@ $(document).ready(function () {
   function formatRupiah(value) {
     const num = Number(value);
     if (isNaN(num)) return value;
-    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
   function formatQty(value) {
     const num = Number(value);
@@ -899,8 +1070,8 @@ $(document).ready(function () {
       { data: 'tanggal', className: 'text-center' },
       { data: 'customer', className: 'text-center' },
       { data: 'jumlah_item', className: 'text-center' },
-      { data: 'total_diskon', className: 'text-right', render: function(data) { console.log('DEBUG total_diskon:', data, 'type:', typeof data); const val = parseFloat(String(data).replace(',', '.')) || 0; console.log('DEBUG parsed val:', val); return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } },
-      { data: 'total', className: 'text-right', render: function(data) { const val = parseFloat(String(data).replace(',', '.')) || 0; return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } },
+      { data: 'total_diskon', className: 'text-right', render: function(data) { console.log('DEBUG total_diskon:', data, 'type:', typeof data); const val = parseFloat(String(data).replace(',', '.')) || 0; console.log('DEBUG parsed val:', val); return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); } },
+      { data: 'total', className: 'text-right', render: function(data) { const val = parseFloat(String(data).replace(',', '.')) || 0; return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); } },
       {
         data: null,
         orderable: false,

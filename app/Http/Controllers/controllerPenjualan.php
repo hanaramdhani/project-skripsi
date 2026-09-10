@@ -169,6 +169,80 @@ class controllerPenjualan extends Controller
         return response()->json(['dataBarangSatuan'=>$dataBarangSatuan]);
     }
 
+    // Hitung selisih stok (satuan terkecil) untuk setiap barang dalam $products.
+    // Return array kd_barang => ['nama'=>, 'stok'=>, 'qty_terjual'=>, 'sisa_stok'=>] hanya untuk yang akan minus.
+    private function hitungItemStokMinus(array $products)
+    {
+        $stokMap = [];
+        foreach (collect($products)->pluck('kd_barang')->filter()->unique() as $kdBarangCek) {
+            $stokRow = DB::select("SELECT stok, nama FROM v_stok_barang WHERE kd_barang = ?", [$kdBarangCek]);
+            $stokMap[$kdBarangCek] = [
+                'stok' => !empty($stokRow) ? (float) $stokRow[0]->stok : 0,
+                'nama' => !empty($stokRow) ? $stokRow[0]->nama : $kdBarangCek,
+            ];
+        }
+
+        // Total qty yang terjual per barang, dikonversi ke satuan terkecil (qty * jumlah m_barang_satuan)
+        $qtyTerjualTerkecil = [];
+        foreach ($products as $product) {
+            $kd_barang = $product['kd_barang'];
+            $kd_satuan = $product['kd_satuan'];
+            $qty = (float) $product['qty'];
+
+            $satuanRow = DB::select("SELECT jumlah FROM m_barang_satuan WHERE kd_barang = ? AND kd_satuan = ?", [$kd_barang, $kd_satuan]);
+            $jumlah = !empty($satuanRow) ? (float) $satuanRow[0]->jumlah : 1;
+
+            $qtyTerjualTerkecil[$kd_barang] = ($qtyTerjualTerkecil[$kd_barang] ?? 0) + ($qty * $jumlah);
+        }
+
+        $itemMinus = [];
+        foreach ($qtyTerjualTerkecil as $kd_barang => $qtyTerkecil) {
+            $stokSekarang = $stokMap[$kd_barang]['stok'] ?? 0;
+            $sisaStok = $stokSekarang - $qtyTerkecil;
+
+            if ($sisaStok < 0) {
+                $itemMinus[$kd_barang] = [
+                    'kd_barang' => $kd_barang,
+                    'nama' => $stokMap[$kd_barang]['nama'] ?? $kd_barang,
+                    'stok' => $stokSekarang,
+                    'qty_terjual' => $qtyTerkecil,
+                    'sisa_stok' => $sisaStok,
+                ];
+            }
+        }
+
+        return $itemMinus;
+    }
+
+    // Endpoint untuk dipanggil frontend sebelum submit, menampilkan konfirmasi jika ada stok yang akan minus.
+    // Notifikasi stok minus langsung dibuat di sini begitu terdeteksi, terlepas dari apakah user
+    // akhirnya jadi menyimpan transaksinya atau membatalkan.
+    public function cekStokPenjualan(Request $request)
+    {
+        $no_transaksi = $request->no_transaksi;
+        $products = $request->products ?? [];
+        $itemMinus = $this->hitungItemStokMinus($products);
+
+        foreach ($itemMinus as $kd_barang => $item) {
+            DB::insert("INSERT INTO t_notifikasi
+                    (tipe, kd_barang, no_transaksi, judul, pesan, is_read, created_at)
+                    VALUES
+                    (?, ?, ?, ?, ?, 0, GETDATE())",
+                    [
+                        'stok_minus',
+                        $kd_barang,
+                        $no_transaksi,
+                        'Stok Berpotensi Minus: ' . $item['nama'],
+                        'Segera cek stok Anda, input pembelian jika belum',
+                    ]);
+        }
+
+        return response()->json([
+            'ada_minus' => count($itemMinus) > 0,
+            'items' => array_values($itemMinus),
+        ]);
+    }
+
     public function inputPenjualan(Request $request)
     {
         $no_transaksi = $request->no_transaksi;

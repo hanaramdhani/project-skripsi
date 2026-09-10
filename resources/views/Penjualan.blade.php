@@ -207,12 +207,7 @@
                                   </select>
                                 </div>
                               </div>
-                              <div class="form-group row mb-0">
-                                <label class="col-sm-4 col-form-label"><strong>Pegawai</strong></label>
-                                <div class="col-sm-8">
-                                  <input type="text" name="kd_pegawai" id="kd_pegawai" class="form-control" value="" required>
-                                </div>
-                              </div>
+                              <input type="hidden" name="kd_pegawai" id="kd_pegawai" value="PAA000">
                             </div>
                           </div>
                         </div>
@@ -284,7 +279,7 @@
                               <div class="form-group row mb-2">
                                 <label class="col-sm-4 col-form-label"><strong>Cash</strong></label>
                                 <div class="col-sm-8">
-                                  <input id="cash" type="number" class="form-control" required>
+                                  <input id="cash" type="number" class="form-control">
                                 </div>
                               </div>
                               <div class="form-group row mb-0">
@@ -611,19 +606,14 @@ $(document).ready(function () {
         updateGrandTotal();
     });
 
-    $('#frm-input').on('submit', function (e) {
-        e.preventDefault();
-        const $form = $(this);
-        const $btn = $form.find('button[type="submit"]');
-        $btn.prop('disabled', true);
-
+    function simpanPenjualan($form, $btn) {
         $.ajax({
             url: $form.attr('action'),
             type: 'POST',
             data: $form.serialize(),
             success: function (res) {
                 if (!res || res.success === false) {
-                    alert((res && res.message) || 'Gagal menyimpan penjualan.');
+                    Swal.fire('Gagal', (res && res.message) || 'Gagal menyimpan penjualan.', 'error');
                     $btn.prop('disabled', false);
                     return;
                 }
@@ -657,8 +647,48 @@ $(document).ready(function () {
             },
             error: function (xhr) {
                 const res = xhr.responseJSON;
-                alert((res && res.message) || 'Gagal menyimpan penjualan.');
+                Swal.fire('Gagal', (res && res.message) || 'Gagal menyimpan penjualan.', 'error');
                 $btn.prop('disabled', false);
+            }
+        });
+    }
+
+    $('#frm-input').on('submit', function (e) {
+        e.preventDefault();
+        const $form = $(this);
+        const $btn = $form.find('button[type="submit"]');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: "{{ route('cek.stok.penjualan') }}",
+            type: 'POST',
+            data: $form.serialize(),
+            success: function (cek) {
+                if (cek && cek.ada_minus) {
+                    // Toast peringatan terpisah di kanan atas (Bootstrap toast, independen dari modal SweetAlert2)
+                    tampilkanToastPeringatan('Stok akan minus untuk ' + cek.items.length + ' barang');
+
+                    // Modal konfirmasi di tengah, menunggu keputusan user
+                    Swal.fire({
+                        icon: 'question',
+                        title: 'Apakah anda yakin?',
+                        showCancelButton: true,
+                        confirmButtonText: 'Tetap Simpan',
+                        cancelButtonText: 'Batal',
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            simpanPenjualan($form, $btn);
+                        } else {
+                            $btn.prop('disabled', false);
+                        }
+                    });
+                } else {
+                    simpanPenjualan($form, $btn);
+                }
+            },
+            error: function () {
+                // Jika pengecekan stok gagal, tetap lanjutkan simpan seperti biasa
+                simpanPenjualan($form, $btn);
             }
         });
     });

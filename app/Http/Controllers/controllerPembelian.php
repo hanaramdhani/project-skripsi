@@ -148,13 +148,15 @@ class controllerPembelian extends Controller
         // Query simplified: hapus correlated subquery harga_beli (lambat).
         // Harga beli ditampilkan "-" di FE, user lihat di row yang dipilih dari t_pembelian_detail.
         // Atau nanti fetch via AJAX terpisah kalau perlu.
+        // t_harga_beli_terakhir.harga_beli disimpan dalam basis satuan_terkecil (jumlah=1), jadi
+        // untuk satuan lain (mis. PAK) harus dikonversi: dikali m_barang_satuan.jumlah milik satuan tsb.
         $dataBarangSatuan = DB::select("SELECT
                                 m_barang.kd_barang AS kd_barang,
                                 m_barang.nama AS barang,
                                 m_satuan.kd_satuan AS kd_satuan,
                                 m_satuan.nama AS satuan,
                                 m_barang_satuan.harga_jual AS harga_jual,
-                                harga_beli AS harga_beli,
+                                ROUND(harga_beli * m_barang_satuan.jumlah, 2) AS harga_beli,
                                 satuan_terkecil
                             FROM m_barang_satuan
                             INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
@@ -164,6 +166,10 @@ class controllerPembelian extends Controller
                             ORDER BY m_barang.nama ASC
                             OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
                             array_merge($bindings, [$offset, $perPage]));
+
+        foreach ($dataBarangSatuan as $row) {
+            $row->harga_beli = round((float) $row->harga_beli, 2);
+        }
 
         return response()->json([
             'dataBarangSatuan' => $dataBarangSatuan,
@@ -203,6 +209,81 @@ class controllerPembelian extends Controller
         return response()->json(['dataBarangSatuan' => $dataBarangSatuan]);
     }
 
+    // Hitung harga satuan setelah diskon per-item. Mode 'N' = nominal langsung dipotong dari harga,
+    // mode '%' = diskon_dt adalah desimal 0..1 dikalikan ke harga lalu dipotong.
+    private function hargaSetelahDiskonItem(float $harga_beli, float $diskon_dt, string $diskon_mode)
+    {
+        if ($diskon_mode === '%') {
+            return $harga_beli - ($harga_beli * $diskon_dt);
+        }
+
+        return $harga_beli - $diskon_dt;
+    }
+
+    // Bandingkan harga beli baru (setelah diskon item, diskon master, pajak, ppnbm) terhadap
+    // harga beli terakhir yang tersimpan. Dipakai untuk modal konfirmasi sebelum simpan pembelian.
+    public function cekHargaPembelian(Request $request)
+    {
+        $products     = $request->products ?? [];
+        $masterDiskon = (float) ($request->masterDiskon ?? 0);
+        $pajak        = (float) ($request->pajak ?? 0);
+        $ppnbm        = (float) ($request->ppnbm ?? 0);
+
+        $perubahan = [];
+
+        foreach ($products as $product) {
+            $kd_barang  = $product['kd_barang'];
+            $kd_satuan  = $product['kd_satuan'];
+            $qty         = (float) $product['qty'];
+            $harga_beli  = (float) $product['harga_beli'];
+            $diskon_dt   = (float) ($product['diskon_dt'] ?? 0);
+            $diskon_mode = $product['diskon_mode'] ?? 'N';
+
+            $satuanRow = DB::select("SELECT m_barang_satuan.jumlah, m_barang_satuan.harga_jual, m_barang.nama AS nama_barang FROM m_barang_satuan
+                                      INNER JOIN m_barang ON m_barang_satuan.kd_barang = m_barang.kd_barang
+                                      WHERE m_barang_satuan.kd_barang = ? AND m_barang_satuan.kd_satuan = ?",
+                                      [$kd_barang, $kd_satuan]);
+
+            if (empty($satuanRow)) {
+                continue;
+            }
+
+            $jumlah          = (float) $satuanRow[0]->jumlah ?: 1;
+            $harga_jual_lama = (float) $satuanRow[0]->harga_jual;
+            $nama_barang     = $satuanRow[0]->nama_barang;
+
+            // Harga beli efektif per unit kd_satuan setelah diskon item, diskon master, pajak, ppnbm
+            $hargaSetelahDiskonItem = $this->hargaSetelahDiskonItem($harga_beli, $diskon_dt, $diskon_mode);
+            $hargaEfektif = $hargaSetelahDiskonItem * (1 - $masterDiskon) * (1 + $pajak + $ppnbm);
+
+            // Konversi ke basis satuan terkecil supaya bisa dibandingkan dengan harga beli terakhir
+            $hargaBeliBaruTerkecil = $jumlah > 0 ? ($hargaEfektif / $jumlah) : $hargaEfektif;
+
+            $terakhirRow = DB::select("SELECT harga_beli FROM t_harga_beli_terakhir WHERE kd_barang = ?", [$kd_barang]);
+            $hargaBeliLamaTerkecil = !empty($terakhirRow) ? (float) $terakhirRow[0]->harga_beli : null;
+
+            $adaPerubahan = $hargaBeliLamaTerkecil === null
+                ? $hargaBeliBaruTerkecil > 0
+                : round($hargaBeliLamaTerkecil, 2) !== round($hargaBeliBaruTerkecil, 2);
+
+            if ($adaPerubahan) {
+                $perubahan[] = [
+                    'kd_barang'        => $kd_barang,
+                    'kd_satuan'        => $kd_satuan,
+                    'nama_barang'      => $nama_barang,
+                    'harga_beli_lama'  => $hargaBeliLamaTerkecil,
+                    'harga_beli_baru'  => round($hargaBeliBaruTerkecil, 2),
+                    'harga_jual'       => $harga_jual_lama,
+                ];
+            }
+        }
+
+        return response()->json([
+            'ada_perubahan' => count($perubahan) > 0,
+            'items' => $perubahan,
+        ]);
+    }
+
     public function inputPembelian(Request $request)
     {
         $no_transaksi        = $request->no_transaksi;
@@ -233,12 +314,13 @@ class controllerPembelian extends Controller
 
                 $products = $request->products ?? [];
                 foreach ($products as $product) {
-                    $kd_barang  = $product['kd_barang'];
-                    $kd_satuan  = $product['kd_satuan'];
-                    $qty        = (float) $product['qty'];
-                    $harga_beli = (float) $product['harga_beli'];
-                    $diskon_dt  = (float) ($product['diskon_dt'] ?? 0);
-                    $total      = ($qty * $harga_beli) - ($diskon_dt * $qty);
+                    $kd_barang   = $product['kd_barang'];
+                    $kd_satuan   = $product['kd_satuan'];
+                    $qty         = (float) $product['qty'];
+                    $harga_beli  = (float) $product['harga_beli'];
+                    $diskon_dt   = (float) ($product['diskon_dt'] ?? 0);
+                    $diskon_mode = $product['diskon_mode'] ?? 'N';
+                    $total       = $this->hargaSetelahDiskonItem($harga_beli, $diskon_dt, $diskon_mode) * $qty;
 
                     DB::insert("INSERT INTO t_pembelian_detail
                                 (no_transaksi, kd_barang, kd_satuan, jenis, qty, harga_beli,
@@ -247,6 +329,21 @@ class controllerPembelian extends Controller
                                 (?, ?, ?, 1, ?, ?, ?, 0, 0, 0, 0, ?)",
                                 [$no_transaksi, $kd_barang, $kd_satuan, $qty, $harga_beli,
                                  $diskon_dt, $total]);
+                }
+
+                // Update harga jual barang yang dicentang di modal konfirmasi (opsional)
+                $updateHargaJual = $request->update_harga_jual ?? [];
+                foreach ($updateHargaJual as $item) {
+                    $kd_barang    = $item['kd_barang'] ?? null;
+                    $kd_satuan    = $item['kd_satuan'] ?? null;
+                    $harga_jual   = isset($item['harga_jual']) ? (float) $item['harga_jual'] : null;
+
+                    if (!$kd_barang || !$kd_satuan || $harga_jual === null) {
+                        continue;
+                    }
+
+                    DB::update("UPDATE m_barang_satuan SET harga_jual = ? WHERE kd_barang = ? AND kd_satuan = ?",
+                                [$harga_jual, $kd_barang, $kd_satuan]);
                 }
             });
         } catch (\Throwable $e) {

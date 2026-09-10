@@ -12,6 +12,7 @@ use App\Http\Controllers\controllerDivisi;
 use App\Http\Controllers\controllerJabatan;
 use App\Http\Controllers\controllerKas;
 use App\Http\Controllers\controllerPegawai;
+use App\Http\Controllers\controllerNotifikasi;
 use App\Http\Controllers\controllerPendapatan;
 use App\Http\Controllers\controllerPembayaranPajak;
 use App\Http\Controllers\controllerPembelian;
@@ -66,17 +67,22 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/penjualan', [controllerPenjualan::class,'viewPenjualan'])->name('index.penjualan');
     Route::get('/products-list', [controllerPenjualan::class,'getBarangSatuan']);
     Route::get('/barang-by-barcode-jual', [controllerPenjualan::class,'getBarangByBarcode']);
+    Route::post('/cek-stok-penjualan', [controllerPenjualan::class, 'cekStokPenjualan'])->name('cek.stok.penjualan');
     Route::post('/input-penjualan', [controllerPenjualan::class, 'inputPenjualan'])->name('input.penjualan');
     Route::post('/edit-penjualan', [controllerPenjualan::class, 'editPenjualan'])->name('edit.penjualan');
     Route::get('/detail-penjualan', [controllerPenjualan::class,'getDetailPenjualan']);
     Route::get('/data-penjualan', [controllerPenjualan::class,'getDataPenjualan'])->name('data.penjualan');
     Route::post('/hapus-penjualan', [controllerPenjualan::class, 'hapusPenjualan'])->name('hapus.penjualan');
 
+    Route::get('/notifikasi', [controllerNotifikasi::class, 'getNotifikasi'])->name('data.notifikasi');
+    Route::post('/notifikasi/baca', [controllerNotifikasi::class, 'bacaNotifikasi'])->name('baca.notifikasi');
+
     // pembelian
     Route::get('/pembelian', [controllerPembelian::class,'viewPembelian'])->name('index.pembelian');
     Route::get('/products-list-beli', [controllerPembelian::class,'getBarangSatuanBeli']);
     Route::get('/barang-by-barcode-beli', [controllerPembelian::class,'getBarangByBarcode']);
     Route::post('/refresh-harga-beli-terakhir', [controllerPembelian::class,'refreshHargaBeliTerakhir'])->name('refresh.harga.beli.terakhir');
+    Route::post('/cek-harga-pembelian', [controllerPembelian::class, 'cekHargaPembelian'])->name('cek.harga.pembelian');
     Route::post('/input-pembelian', [controllerPembelian::class, 'inputPembelian'])->name('input.pembelian');
     Route::post('/edit-pembelian', [controllerPembelian::class, 'editPembelian'])->name('edit.pembelian');
     Route::get('/detail-pembelian', [controllerPembelian::class,'getDetailPembelian']);

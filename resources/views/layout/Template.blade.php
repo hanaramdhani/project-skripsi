@@ -31,6 +31,46 @@
   <link rel="stylesheet" href="{{ asset('lte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
   <link rel="stylesheet" href="{{ asset('lte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
 
+  <style>
+    .notifikasi-menu {
+      width: 340px;
+      max-width: 90vw;
+      overflow: hidden;
+    }
+    .notifikasi-scroll {
+      max-height: 330px;
+      overflow-y: auto;
+    }
+    .notifikasi-item {
+      display: block;
+      white-space: normal;
+      padding: 0.65rem 1rem;
+    }
+    .notifikasi-item .notifikasi-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #212529;
+      margin-bottom: 0.15rem;
+    }
+    .notifikasi-item .notifikasi-title i {
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+    }
+    .notifikasi-item .notifikasi-pesan {
+      display: block;
+      font-size: 0.8rem;
+      color: #6c757d;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .notifikasi-item.unread {
+      background-color: #fff8e6;
+    }
+  </style>
+
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -154,6 +194,19 @@
           <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
         </div>
       </li> -->
+      <li class="nav-item dropdown" id="notifikasiDropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#" id="notifikasiBell">
+          <i class="far fa-bell"></i>
+          <span class="badge badge-warning navbar-badge" id="notifikasiBadge" style="display:none;">0</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right p-0 notifikasi-menu" id="notifikasiList">
+          <span class="dropdown-item dropdown-header" id="notifikasiHeader">Notifikasi</span>
+          <div class="dropdown-divider m-0"></div>
+          <div class="notifikasi-scroll">
+            <span class="dropdown-item text-muted text-center py-3" id="notifikasiEmpty">Tidak ada notifikasi</span>
+          </div>
+        </div>
+      </li>
       <li class="nav-item">
         <a class="nav-link" data-widget="fullscreen" href="#" role="button">
           <i class="fas fa-expand-arrows-alt"></i>
@@ -541,6 +594,10 @@
 <script src="{{ asset('lte/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') }}"></script>
 <!-- AdminLTE App -->
 <script src="{{ asset('lte/dist/js/adminlte.js') }}"></script>
+<!-- SweetAlert2 -->
+<link rel="stylesheet" href="{{ asset('lte/plugins/sweetalert2/sweetalert2.min.css') }}">
+<link rel="stylesheet" href="{{ asset('lte/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
+<script src="{{ asset('lte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
@@ -565,6 +622,72 @@
   <script>
     $(function () { $('#toastStatus').toast('show'); });
   </script>
+@endif
+
+<div class="toast align-items-center border-0 bg-warning text-dark" role="alert" aria-live="assertive" aria-atomic="true"
+     style="position: fixed; top: 70px; right: 20px; z-index: 9999; min-width: 260px;" data-delay="4000" id="toastPeringatan">
+  <div class="d-flex">
+    <div class="toast-body" id="toastPeringatanBody"></div>
+    <button type="button" class="close mr-2 m-auto" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</div>
+<script>
+  function tampilkanToastPeringatan(pesan) {
+    $('#toastPeringatanBody').text(pesan);
+    $('#toastPeringatan').toast('show');
+  }
+</script>
+
+@if (session('user'))
+<script>
+  function muatNotifikasi() {
+    $.get('{{ route('data.notifikasi') }}', function (res) {
+      var $badge = $('#notifikasiBadge');
+      var $scroll = $('.notifikasi-scroll');
+
+      if (res.unread_count > 0) {
+        $badge.text(res.unread_count).show();
+      } else {
+        $badge.hide();
+      }
+
+      $scroll.find('.notifikasi-item, .dropdown-divider.notifikasi-divider').remove();
+      $('#notifikasiEmpty').toggle(res.data.length === 0);
+
+      res.data.forEach(function (item, idx) {
+        if (idx > 0) {
+          $scroll.append('<div class="dropdown-divider notifikasi-divider m-0"></div>');
+        }
+        var $link = $('<a href="#" class="dropdown-item notifikasi-item"></a>')
+          .attr('data-id', item.id)
+          .toggleClass('unread', !item.is_read)
+          .append(
+            $('<span class="notifikasi-title"></span>').append(
+              $('<i class="fas fa-exclamation-triangle text-warning"></i>'),
+              $('<span></span>').text(item.judul)
+            ),
+            $('<span class="notifikasi-pesan"></span>').text(item.pesan)
+          );
+        $scroll.append($link);
+      });
+    });
+  }
+
+  $(document).on('click', '.notifikasi-item', function (e) {
+    e.preventDefault();
+    var id = $(this).data('id');
+    $.post('{{ route('baca.notifikasi') }}', { id: id, _token: '{{ csrf_token() }}' }, function () {
+      muatNotifikasi();
+    });
+  });
+
+  $(function () {
+    muatNotifikasi();
+    setInterval(muatNotifikasi, 30000);
+  });
+</script>
 @endif
 
 @yield('scripts')
