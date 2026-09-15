@@ -67,7 +67,7 @@
 
 <!-- SCRIPT UNTUK TABEL DATA -->
 <script>
-  $('#table-laporan-stok').DataTable({
+  const table = $('#table-laporan-stok').DataTable({
     processing: true,
     serverSide: true,
     paging: true,
@@ -88,7 +88,57 @@
       { data: 'stok', className: 'text-center' },
       { data: 'satuan_terkecil', className: 'text-center' },
       { data: 'harga_beli', className: 'text-right', render: function(data) { const val = parseFloat(String(data).replace(',', '.')) || 0; return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); } }
-    ]
+    ],
+    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 text-right"f>> rt <"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+  });
+
+  // Tambah tombol refresh di sebelah kiri search
+  $('<button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-refresh-harga-beli" title="Refresh harga beli terakhir"><i class="fas fa-sync-alt"></i></button>')
+    .prependTo('.dataTables_filter');
+
+  $('#btn-refresh-harga-beli').on('click', function() {
+    const $btn = $(this);
+    const $icon = $btn.find('i');
+    const originalText = $btn.html();
+
+    $btn.prop('disabled', true);
+    $icon.addClass('fa-spin');
+
+    $.ajax({
+      url: "{{ route('refresh.harga.beli.terakhir') }}",
+      type: 'POST',
+      data: { _token: '{{ csrf_token() }}' },
+      success: function(res) {
+        if (res && res.success === true) {
+          // Reload tabel
+          table.ajax.reload(null, false);
+          if (typeof Swal !== 'undefined') {
+            Swal.fire('Sukses', 'Data berhasil direfresh', 'success');
+          } else {
+            alert('Data berhasil direfresh');
+          }
+        } else {
+          const msg = (res && res.message) || 'Gagal refresh harga beli terakhir.';
+          if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', msg, 'error');
+          } else {
+            alert(msg);
+          }
+        }
+      },
+      error: function(xhr) {
+        const msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Gagal refresh harga beli terakhir.';
+        if (typeof Swal !== 'undefined') {
+          Swal.fire('Error', msg, 'error');
+        } else {
+          alert(msg);
+        }
+      },
+      complete: function() {
+        $btn.prop('disabled', false);
+        $icon.removeClass('fa-spin');
+      }
+    });
   });
 </script>
 @endsection
