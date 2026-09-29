@@ -13,15 +13,17 @@ class LaporanController extends Controller
     {
         # code...
     }
-    public function getLaporanLabaRugi(Request $req)
-    {
-        $awal = $req->awal;
-        $akhir = $req->akhir;
-        $data = DB::select("SELECT * from r_laba_rugi_harian WHERE tanggal BETWEEN '2025-04-03' AND '2025-04-08'");
-        // $data = DB::select("CALL GetLabaRugi('$awal','$akhir')");
-        // return response()->json(['data' => $data]);
-        return view('LaporanLabaRugi', ['data'=>$data]);
-    }
+    // Tidak dipakai: view r_laba_rugi_harian tidak ada di skripsi_pos.
+    // Halaman aktif: viewLaporanLabaRugi() -> fn_Laporan_LabaRugi.
+    // public function getLaporanLabaRugi(Request $req)
+    // {
+    //     $awal = $req->awal;
+    //     $akhir = $req->akhir;
+    //     $data = DB::select("SELECT * from r_laba_rugi_harian WHERE tanggal BETWEEN '2025-04-03' AND '2025-04-08'");
+    //     // $data = DB::select("CALL GetLabaRugi('$awal','$akhir')");
+    //     // return response()->json(['data' => $data]);
+    //     return view('LaporanLabaRugi', ['data'=>$data]);
+    // }
 
     // =====================================================================
     // Helper: tanggal default (tanggal jurnal terakhir)
@@ -100,7 +102,7 @@ class LaporanController extends Controller
     }
 
     private function dataNeraca($tgl_awal, $tgl_akhir)
-    {
+    {/*  */
         $rows = DB::select("SELECT * FROM dbo.fn_Neraca_Saldo(?, ?) ORDER BY coa_kode", [$tgl_awal, $tgl_akhir]);
 
         $grouped = [];
@@ -267,6 +269,372 @@ class LaporanController extends Controller
             'recordsFiltered' => $recordsFiltered,
             'data'            => $data,
         ]);
+    }
+
+    // =====================================================================
+    // Rincian persediaan per barang (modal di Laporan Neraca), server-side
+    // =====================================================================
+
+    public function getDataPersediaanNeraca(Request $request)
+    {
+        $tgl = (string) $request->input('tgl_akhir', '');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl)) {
+            return response()->json(['error' => 'tgl_akhir tidak valid'], 422);
+        }
+
+        $draw   = (int) $request->input('draw', 1);
+        $start  = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+        $search = trim((string) $request->input('search.value', ''));
+
+        $columnsMap = [
+            0 => 'kd_barang',
+            1 => 'nama',
+            2 => 'satuan_terkecil',
+            3 => 'qty_beli',
+            4 => 'nilai_beli',
+            5 => 'qty_jual',
+            6 => 'nilai_hpp',
+            7 => 'qty_sisa',
+            8 => 'nilai_persediaan',
+        ];
+        $orderColumn = $columnsMap[(int) $request->input('order.0.column', 8)] ?? 'nilai_persediaan';
+        $orderDir    = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        $orderSql    = $orderColumn === 'kd_barang' ? "kd_barang $orderDir" : "$orderColumn $orderDir, kd_barang ASC";
+
+        $where = '';
+        $bindings = [$tgl];
+        if ($search !== '') {
+            // escape wildcard LIKE milik SQL Server agar dicari sebagai teks biasa
+            $like = '%' . str_replace(['[', '%', '_'], ['[[]', '[%]', '[_]'], $search) . '%';
+            $where = 'WHERE (nama LIKE ? OR kd_barang LIKE ?)';
+            $bindings[] = $like;
+            $bindings[] = $like;
+        }
+
+        $sumCols = ['qty_beli', 'nilai_beli', 'qty_jual', 'nilai_hpp', 'qty_sisa', 'nilai_persediaan'];
+        $windowSums = implode(",
+                   ", array_map(function ($c) {
+            return "SUM($c) OVER() AS f_$c";
+        }, $sumCols));
+
+        // COUNT/SUM OVER() membawa jumlah & total hasil filter di query yang sama dengan halaman data
+        $rows = DB::select("
+            SELECT kd_barang, nama, satuan_terkecil, " . implode(', ', $sumCols) . ",
+                   COUNT(*) OVER() AS f_count,
+                   $windowSums
+            FROM dbo.fn_Persediaan_Barang(?)
+            $where
+            ORDER BY $orderSql
+            OFFSET $start ROWS FETCH NEXT $length ROWS ONLY
+        ", $bindings);
+
+        if (!empty($rows)) {
+            $filtered = ['count' => (int) $rows[0]->f_count];
+            foreach ($sumCols as $c) {
+                $filtered[$c] = round((float) $rows[0]->{"f_$c"}, 2);
+            }
+        } else {
+            // halaman kosong (mis. tidak ada hasil pencarian): hitung terpisah
+            $filtered = $this->sumPersediaan($tgl, $where, $bindings, $sumCols);
+        }
+
+        $total = $search === '' ? $filtered : $this->sumPersediaan($tgl, '', [$tgl], $sumCols);
+
+        foreach ($rows as $row) {
+            foreach ($sumCols as $c) {
+                $row->$c = round((float) $row->$c, 2);
+                unset($row->{"f_$c"});
+            }
+            unset($row->f_count);
+        }
+
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $total['count'],
+            'recordsFiltered' => $filtered['count'],
+            'data'            => $rows,
+            'total'           => $total,      // semua barang
+            'filtered'        => $filtered,   // hasil pencarian (sama dengan total kalau tidak mencari)
+            'total_nilai'     => $total['nilai_persediaan'],
+            'filtered_nilai'  => $filtered['nilai_persediaan'],
+        ]);
+    }
+
+    private function sumPersediaan($tgl, $where, array $bindings, array $sumCols)
+    {
+        $selects = implode(', ', array_map(function ($c) {
+            return "ISNULL(SUM($c), 0) AS $c";
+        }, $sumCols));
+
+        $r = DB::select("
+            SELECT COUNT(*) AS c, $selects
+            FROM dbo.fn_Persediaan_Barang(?)
+            $where
+        ", $bindings)[0];
+
+        $out = ['count' => (int) $r->c];
+        foreach ($sumCols as $c) {
+            $out[$c] = round((float) $r->$c, 2);
+        }
+        return $out;
+    }
+
+    // =====================================================================
+    // Rincian Kas / buku besar akun 101 (modal di Laporan Neraca), server-side
+    // =====================================================================
+
+    public function getDataKasNeraca(Request $request)
+    {
+        $tgl = (string) $request->input('tgl_akhir', '');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl)) {
+            return response()->json(['error' => 'tgl_akhir tidak valid'], 422);
+        }
+
+        $draw   = (int) $request->input('draw', 1);
+        $start  = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+        $search = trim((string) $request->input('search.value', ''));
+
+        // kolom tanggal diurutkan lewat "urut" supaya urutan dalam satu hari tetap sama dengan saldo berjalan
+        $columnsMap = [
+            0 => 'urut',
+            1 => 'no_bukti',
+            2 => 'sumber',
+            3 => 'debit',
+            4 => 'kredit',
+            5 => 'saldo_berjalan',
+        ];
+        $orderColumn = $columnsMap[(int) $request->input('order.0.column', 0)] ?? 'urut';
+        $orderDir    = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        $orderSql    = $orderColumn === 'urut' ? "urut $orderDir" : "$orderColumn $orderDir, urut ASC";
+
+        $where = '';
+        $bindings = [$tgl];
+        if ($search !== '') {
+            // escape wildcard LIKE milik SQL Server agar dicari sebagai teks biasa
+            $like = '%' . str_replace(['[', '%', '_'], ['[[]', '[%]', '[_]'], $search) . '%';
+            $where = 'WHERE (no_bukti LIKE ? OR sumber LIKE ?)';
+            array_push($bindings, $like, $like);
+        }
+
+        // filter dipasang di luar function: saldo_berjalan tetap saldo kas sebenarnya walau hasil difilter
+        $rows = DB::select("
+            SELECT urut, tgl_jurnal, no_bukti, sumber, debit, kredit, saldo_berjalan,
+                   COUNT(*) OVER() AS f_count,
+                   SUM(debit) OVER() AS f_debit,
+                   SUM(kredit) OVER() AS f_kredit
+            FROM dbo.fn_Kas_Detail(?)
+            $where
+            ORDER BY $orderSql
+            OFFSET $start ROWS FETCH NEXT $length ROWS ONLY
+        ", $bindings);
+
+        if (!empty($rows)) {
+            $filtered = [
+                'count'  => (int) $rows[0]->f_count,
+                'debit'  => round((float) $rows[0]->f_debit, 2),
+                'kredit' => round((float) $rows[0]->f_kredit, 2),
+            ];
+        } else {
+            // halaman kosong (mis. tidak ada hasil pencarian): hitung terpisah
+            $filtered = $this->sumKas($where, $bindings);
+        }
+        $filtered['saldo'] = round($filtered['debit'] - $filtered['kredit'], 2);
+
+        if ($search === '') {
+            $total = $filtered;
+        } else {
+            $total = $this->sumKas('', [$tgl]);
+            $total['saldo'] = round($total['debit'] - $total['kredit'], 2);
+        }
+
+        foreach ($rows as $row) {
+            unset($row->f_count, $row->f_debit, $row->f_kredit);
+            foreach (['debit', 'kredit', 'saldo_berjalan'] as $k) {
+                $row->$k = round((float) $row->$k, 2);
+            }
+        }
+
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $total['count'],
+            'recordsFiltered' => $filtered['count'],
+            'data'            => $rows,
+            'total'           => $total,      // semua transaksi kas
+            'filtered'        => $filtered,   // hasil pencarian (sama dengan total kalau tidak mencari)
+        ]);
+    }
+
+    private function sumKas($where, array $bindings)
+    {
+        $r = DB::select("
+            SELECT COUNT(*) AS c, ISNULL(SUM(debit), 0) AS d, ISNULL(SUM(kredit), 0) AS k
+            FROM dbo.fn_Kas_Detail(?)
+            $where
+        ", $bindings)[0];
+
+        return [
+            'count'  => (int) $r->c,
+            'debit'  => round((float) $r->d, 2),
+            'kredit' => round((float) $r->k, 2),
+        ];
+    }
+
+    // =====================================================================
+    // Rincian Laba Rugi (modal di Laporan Laba Rugi), server-side
+    // =====================================================================
+
+    // Pendapatan Penjualan (401) per barang: dbo.fn_LabaRugi_PerBarang, tampilkan kolom nilai_penjualan
+    public function getDataLabaRugiPenjualan(Request $request)
+    {
+        return $this->labaRugiPerBarang($request, 'nilai_penjualan');
+    }
+
+    // Harga Pokok Penjualan (503) per barang: function yang sama, tampilkan kolom nilai_hpp
+    public function getDataLabaRugiHpp(Request $request)
+    {
+        return $this->labaRugiPerBarang($request, 'nilai_hpp');
+    }
+
+    private function labaRugiPerBarang(Request $request, $nilaiCol)
+    {
+        $from = 'dbo.fn_LabaRugi_PerBarang(?, ?)';
+        [$awal, $akhir] = [(string) $request->input('tgl_awal', ''), (string) $request->input('tgl_akhir', '')];
+        if (!$this->isTanggal($awal) || !$this->isTanggal($akhir)) {
+            return response()->json(['error' => 'tanggal tidak valid'], 422);
+        }
+
+        return response()->json($this->pageDetail(
+            $request,
+            $from,
+            [$awal, $akhir],
+            [0 => 'kd_barang', 1 => 'nama', 2 => 'satuan_terkecil', 3 => 'qty_jual', 4 => $nilaiCol],
+            'kd_barang',
+            ['nama', 'kd_barang'],
+            ['qty_jual', $nilaiCol],
+            $nilaiCol
+        ));
+    }
+
+    // Pendapatan Lain (402), Beban Operasional (501), Beban Pajak Final (502) per transaksi -> dbo.fn_LabaRugi_Transaksi
+    public function getDataLabaRugiTransaksi(Request $request)
+    {
+        [$awal, $akhir] = [(string) $request->input('tgl_awal', ''), (string) $request->input('tgl_akhir', '')];
+        $coa = (string) $request->input('coa', '');
+        if (!$this->isTanggal($awal) || !$this->isTanggal($akhir) || !in_array($coa, ['402', '501', '502'], true)) {
+            return response()->json(['error' => 'parameter tidak valid'], 422);
+        }
+
+        return response()->json($this->pageDetail(
+            $request,
+            'dbo.fn_LabaRugi_Transaksi(?, ?, ?)',
+            [$awal, $akhir, $coa],
+            [0 => 'urut', 1 => 'no_bukti', 2 => 'keterangan', 3 => 'nilai'],
+            'urut',
+            ['no_bukti', 'keterangan'],
+            ['nilai'],
+            'urut',
+            ['tgl_jurnal']
+        ));
+    }
+
+    private function isTanggal($s)
+    {
+        return (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $s);
+    }
+
+    /**
+     * Pagination server-side untuk table-valued function (format DataTables).
+     * Filter dipasang di luar function; total & jumlah hasil filter dihitung dengan window function
+     * di query yang sama dengan halaman data.
+     *
+     * @param string $from         FROM clause (nama function + placeholder ?)
+     * @param array  $fromBindings binding untuk placeholder di $from
+     * @param array  $columnsMap   indeks kolom DataTables => nama kolom (white-list untuk ORDER BY)
+     * @param string $tieBreak     kolom pengurut kedua agar urutan halaman stabil
+     * @param array  $searchCols   kolom yang dicari (LIKE)
+     * @param array  $sumCols      kolom angka yang dijumlahkan (total semua & total hasil filter)
+     * @param string $defaultCol   urutan awal (menurun) kalau DataTables tidak mengirim order
+     * @param array  $extraCols    kolom non-angka tambahan yang ikut di-SELECT
+     */
+    private function pageDetail(Request $request, $from, array $fromBindings, array $columnsMap, $tieBreak,
+                                array $searchCols, array $sumCols, $defaultCol, array $extraCols = [])
+    {
+        $draw   = (int) $request->input('draw', 1);
+        $start  = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($request->has('order.0.column')) {
+            $orderColumn = $columnsMap[(int) $request->input('order.0.column')] ?? $defaultCol;
+            $orderDir    = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        } else {
+            $orderColumn = $defaultCol;
+            $orderDir    = 'DESC';
+        }
+        $orderSql = $orderColumn === $tieBreak ? "$orderColumn $orderDir" : "$orderColumn $orderDir, $tieBreak ASC";
+
+        $where = '';
+        $bindings = $fromBindings;
+        if ($search !== '') {
+            // escape wildcard LIKE milik SQL Server agar dicari sebagai teks biasa
+            $like = '%' . str_replace(['[', '%', '_'], ['[[]', '[%]', '[_]'], $search) . '%';
+            $where = 'WHERE (' . implode(' OR ', array_map(function ($c) { return "$c LIKE ?"; }, $searchCols)) . ')';
+            foreach ($searchCols as $c) {
+                $bindings[] = $like;
+            }
+        }
+
+        $selectCols = implode(', ', array_merge(array_values($columnsMap), $extraCols));
+        $windowSums = implode(', ', array_map(function ($c) { return "SUM($c) OVER() AS f_$c"; }, $sumCols));
+
+        $rows = DB::select("
+            SELECT $selectCols, COUNT(*) OVER() AS f_count, $windowSums
+            FROM $from
+            $where
+            ORDER BY $orderSql
+            OFFSET $start ROWS FETCH NEXT $length ROWS ONLY
+        ", $bindings);
+
+        $sumSql = function ($whereSql) use ($from, $sumCols) {
+            return "SELECT COUNT(*) AS c, " . implode(', ', array_map(function ($c) { return "ISNULL(SUM($c), 0) AS $c"; }, $sumCols))
+                 . " FROM $from $whereSql";
+        };
+        $toTotals = function ($r, $prefix, $countKey) use ($sumCols) {
+            $t = ['count' => (int) $r->$countKey];
+            foreach ($sumCols as $c) {
+                $t[$c] = round((float) $r->{$prefix . $c}, 2);
+            }
+            return $t;
+        };
+
+        $filtered = !empty($rows)
+            ? $toTotals($rows[0], 'f_', 'f_count')
+            : $toTotals(DB::select($sumSql($where), $bindings)[0], '', 'c');   // halaman kosong: hitung terpisah
+        $total = $search === ''
+            ? $filtered
+            : $toTotals(DB::select($sumSql(''), $fromBindings)[0], '', 'c');
+
+        foreach ($rows as $row) {
+            foreach ($sumCols as $c) {
+                $row->$c = round((float) $row->$c, 2);
+                unset($row->{"f_$c"});
+            }
+            unset($row->f_count);
+        }
+
+        return [
+            'draw'            => $draw,
+            'recordsTotal'    => $total['count'],
+            'recordsFiltered' => $filtered['count'],
+            'data'            => $rows,
+            'total'           => $total,      // semua data
+            'filtered'        => $filtered,   // hasil pencarian (sama dengan total kalau tidak mencari)
+        ];
     }
 
     // =====================================================================

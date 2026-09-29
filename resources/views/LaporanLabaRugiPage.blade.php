@@ -46,6 +46,14 @@
               </div>
             </div>
 
+            @php
+              // Rincian per baris: link hanya aktif kalau barisnya ada di hasil laporan
+              $barisLr = collect($grouped)
+                  ->flatMap(function ($g) { return $g['items']; })
+                  ->keyBy(function ($it) { return trim($it->coa_kode); });
+              $adaTransaksi = $barisLr->has('402') || $barisLr->has('501') || $barisLr->has('502');
+            @endphp
+
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">
@@ -82,7 +90,26 @@
                       @foreach ($group['items'] as $item)
                         <tr>
                           <td class="text-center">{{ $item->coa_kode }}</td>
-                          <td class="pl-4">{{ $item->coa_nama }}</td>
+                          <td class="pl-4">
+                            @php $kodeLr = trim($item->coa_kode); @endphp
+                            @if ($kodeLr === '401')
+                              <a href="#" data-toggle="modal" data-target="#modalLabaRugiPenjualan" title="Lihat rincian penjualan per barang">
+                                {{ $item->coa_nama }} <i class="bi bi-list-ul small"></i>
+                              </a>
+                            @elseif ($kodeLr === '503')
+                              <a href="#" data-toggle="modal" data-target="#modalLabaRugiHpp" title="Lihat rincian HPP per barang">
+                                {{ $item->coa_nama }} <i class="bi bi-list-ul small"></i>
+                              </a>
+                            @elseif (in_array($kodeLr, ['402', '501', '502'], true))
+                              <a href="#" data-toggle="modal" data-target="#modalLabaRugiTrx"
+                                 data-coa="{{ $kodeLr }}" data-nama="{{ $item->coa_nama }}" data-nilai="{{ $item->nilai }}"
+                                 title="Lihat rincian per transaksi">
+                                {{ $item->coa_nama }} <i class="bi bi-list-ul small"></i>
+                              </a>
+                            @else
+                              {{ $item->coa_nama }}
+                            @endif
+                          </td>
                           <td class="text-right">{{ number_format($item->nilai, 2, ',', '.') }}</td>
                         </tr>
                       @endforeach
@@ -126,6 +153,41 @@
       'tgl_awal'  => $tgl_awal,
       'tgl_akhir' => $tgl_akhir,
   ])
+
+  @if ($barisLr->has('401'))
+    @include('partials.modal-labarugi-barang', [
+        'id'           => 'Penjualan',
+        'judul'        => 'Rincian Pendapatan Penjualan per Barang',
+        'url'          => route('data.labarugi.penjualan'),
+        'nilaiKey'     => 'nilai_penjualan',
+        'nilaiLabel'   => 'Penjualan',
+        'akunNama'     => $barisLr->get('401')->coa_nama,
+        'nilaiLaporan' => $barisLr->get('401')->nilai,
+        'tgl_awal'     => $tgl_awal,
+        'tgl_akhir'    => $tgl_akhir,
+    ])
+  @endif
+
+  @if ($barisLr->has('503'))
+    @include('partials.modal-labarugi-barang', [
+        'id'           => 'Hpp',
+        'judul'        => 'Rincian HPP per Barang',
+        'url'          => route('data.labarugi.hpp'),
+        'nilaiKey'     => 'nilai_hpp',
+        'nilaiLabel'   => 'HPP',
+        'akunNama'     => $barisLr->get('503')->coa_nama,
+        'nilaiLaporan' => $barisLr->get('503')->nilai,
+        'tgl_awal'     => $tgl_awal,
+        'tgl_akhir'    => $tgl_akhir,
+    ])
+  @endif
+
+  @if ($adaTransaksi)
+    @include('partials.modal-labarugi-transaksi', [
+        'tgl_awal'  => $tgl_awal,
+        'tgl_akhir' => $tgl_akhir,
+    ])
+  @endif
 
 @endsection
 

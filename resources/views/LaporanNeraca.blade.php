@@ -59,6 +59,14 @@
               $totalEkuitas   = $grouped['EQUITY']['saldo']    ?? 0;
               $totalPasiva    = $totalLiabilitas + $totalEkuitas;   // Liabilitas + Ekuitas
               $isBalance      = abs($totalAset - $totalPasiva) < 0.01;
+
+              // Baris Persediaan (COA 103): rincian per barang hanya aktif kalau barisnya ada di hasil neraca
+              $persediaan = collect($grouped['ASSET']['items'] ?? [])
+                  ->first(function ($it) { return trim($it->coa_kode) === '103'; });
+
+              // Baris Kas (COA 101): rincian buku besar kas, aktif hanya kalau barisnya ada di hasil neraca
+              $kas = collect($grouped['ASSET']['items'] ?? [])
+                  ->first(function ($it) { return trim($it->coa_kode) === '101'; });
             @endphp
 
             <div class="card">
@@ -100,7 +108,19 @@
                       @foreach ($grouped['ASSET']['items'] as $item)
                         <tr>
                           <td class="text-center">{{ $item->coa_kode }}</td>
-                          <td class="pl-4">{{ $item->coa_nama }}</td>
+                          <td class="pl-4">
+                            @if ($persediaan && trim($item->coa_kode) === '103')
+                              <a href="#" data-toggle="modal" data-target="#modalDetailPersediaan" title="Lihat rincian per barang">
+                                {{ $item->coa_nama }} <i class="bi bi-list-ul small"></i>
+                              </a>
+                            @elseif ($kas && trim($item->coa_kode) === '101')
+                              <a href="#" data-toggle="modal" data-target="#modalDetailKas" title="Lihat rincian kas">
+                                {{ $item->coa_nama }} <i class="bi bi-list-ul small"></i>
+                              </a>
+                            @else
+                              {{ $item->coa_nama }}
+                            @endif
+                          </td>
                           <td class="text-right {{ $item->saldo < 0 ? 'text-danger' : '' }}">{{ number_format($item->saldo, 2, ',', '.') }}</td>
                         </tr>
                       @endforeach
@@ -187,6 +207,20 @@
       'tgl_awal'  => $tgl_awal,
       'tgl_akhir' => $tgl_akhir,
   ])
+
+  @if ($persediaan)
+    @include('partials.modal-persediaan-neraca', [
+        'tgl_akhir' => $tgl_akhir,
+        'saldo'     => $persediaan->saldo,
+    ])
+  @endif
+
+  @if ($kas)
+    @include('partials.modal-kas-neraca', [
+        'tgl_akhir' => $tgl_akhir,
+        'saldo'     => $kas->saldo,
+    ])
+  @endif
 
 @endsection
 

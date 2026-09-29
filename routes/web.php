@@ -194,12 +194,17 @@ Route::middleware('auth.user')->group(function () {
     Route::post('/hapus-master-user', [controllerUser::class, 'hapusUser'])->name('hapus.master.user');
 
     // laporan Laba Rugi (endpoint AJAX lama)
-    Route::get('/getLabaRugi', [LaporanController::class,'getLaporanLabaRugi','getLaporanLabaRugi']);
+    // Route::get('/getLabaRugi', [LaporanController::class,'getLaporanLabaRugi','getLaporanLabaRugi']);
 
     // Laporan Keuangan
     Route::get('/jurnal-umum', [LaporanController::class,'viewJurnalUmum'])->name('index.jurnal.umum');
     Route::get('/laporan-laba-rugi', [LaporanController::class,'viewLaporanLabaRugi'])->name('index.laporan.laba.rugi');
     Route::get('/laporan-neraca', [LaporanController::class,'viewLaporanNeraca'])->name('index.laporan.neraca');
+    Route::get('/data-persediaan-neraca', [LaporanController::class,'getDataPersediaanNeraca'])->name('data.persediaan.neraca');
+    Route::get('/data-kas-neraca', [LaporanController::class,'getDataKasNeraca'])->name('data.kas.neraca');
+    Route::get('/data-labarugi-penjualan', [LaporanController::class,'getDataLabaRugiPenjualan'])->name('data.labarugi.penjualan');
+    Route::get('/data-labarugi-hpp', [LaporanController::class,'getDataLabaRugiHpp'])->name('data.labarugi.hpp');
+    Route::get('/data-labarugi-transaksi', [LaporanController::class,'getDataLabaRugiTransaksi'])->name('data.labarugi.transaksi');
     Route::get('/laporan-arus-kas', [LaporanController::class,'viewLaporanArusKas'])->name('index.laporan.arus.kas');
 
     // Laporan Stok
