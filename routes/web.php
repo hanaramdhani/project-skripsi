@@ -7,6 +7,8 @@ use App\Http\Controllers\controllerAkun;
 use App\Http\Controllers\controllerBarang;
 use App\Http\Controllers\controllerBarangSatuan;
 use App\Http\Controllers\controllerBiaya;
+use App\Http\Controllers\controllerBiayaOperasional;
+use App\Http\Controllers\controllerTransPendapatan;
 use App\Http\Controllers\controllerCustomer;
 use App\Http\Controllers\controllerDivisi;
 use App\Http\Controllers\controllerJabatan;
@@ -99,8 +101,22 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/data-hutang-pajak', [controllerPembayaranPajak::class, 'getDataHutangPajak'])->name('data.hutang.pajak.list');
     Route::post('/generate-hutang-pajak', [controllerPembayaranPajak::class, 'generateHutangPajak'])->name('generate.hutang.pajak');
 
+    // biaya operasional
+    Route::get('/biaya-operasional', [controllerBiayaOperasional::class,'viewBiayaOperasional'])->name('index.biaya.operasional');
+    Route::get('/data-biaya-operasional', [controllerBiayaOperasional::class,'getDataBiayaOperasional'])->name('data.biaya.operasional');
+    Route::post('/input-biaya-operasional', [controllerBiayaOperasional::class, 'inputBiayaOperasional'])->name('input.biaya.operasional');
+    Route::post('/edit-biaya-operasional', [controllerBiayaOperasional::class, 'editBiayaOperasional'])->name('edit.biaya.operasional');
+    Route::post('/hapus-biaya-operasional', [controllerBiayaOperasional::class, 'hapusBiayaOperasional'])->name('hapus.biaya.operasional');
+
+    // pendapatan (transaksi)
+    Route::get('/transaksi-pendapatan', [controllerTransPendapatan::class,'viewTransPendapatan'])->name('index.trans.pendapatan');
+    Route::get('/data-transaksi-pendapatan', [controllerTransPendapatan::class,'getDataTransPendapatan'])->name('data.trans.pendapatan');
+    Route::post('/input-transaksi-pendapatan', [controllerTransPendapatan::class, 'inputTransPendapatan'])->name('input.trans.pendapatan');
+    Route::post('/edit-transaksi-pendapatan', [controllerTransPendapatan::class, 'editTransPendapatan'])->name('edit.trans.pendapatan');
+    Route::post('/hapus-transaksi-pendapatan', [controllerTransPendapatan::class, 'hapusTransPendapatan'])->name('hapus.trans.pendapatan');
+
     // m_barang
-    Route::get('/barang', [controllerBarang::class,'viewMasterBarang'])->name('index.master.barang');
+    Route::get('/barang',[controllerBarang::class,'viewMasterBarang'])->name('index.master.barang');
     Route::get('/data-barang', [controllerBarang::class,'getDataBarang'])->name('data.master.barang');
     Route::post('/input-master-barang', [controllerBarang::class, 'inputBarang'])->name('input.master.barang');
     Route::post('/barang-cepat', [controllerBarang::class, 'inputBarangCepat'])->name('input.barang.cepat');
@@ -201,6 +217,7 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/laporan-laba-rugi', [LaporanController::class,'viewLaporanLabaRugi'])->name('index.laporan.laba.rugi');
     Route::get('/laporan-neraca', [LaporanController::class,'viewLaporanNeraca'])->name('index.laporan.neraca');
     Route::get('/data-persediaan-neraca', [LaporanController::class,'getDataPersediaanNeraca'])->name('data.persediaan.neraca');
+    Route::get('/data-persediaan-stok', [LaporanController::class,'getDataPersediaanStok'])->name('data.persediaan.stok');
     Route::get('/data-kas-neraca', [LaporanController::class,'getDataKasNeraca'])->name('data.kas.neraca');
     Route::get('/data-labarugi-penjualan', [LaporanController::class,'getDataLabaRugiPenjualan'])->name('data.labarugi.penjualan');
     Route::get('/data-labarugi-hpp', [LaporanController::class,'getDataLabaRugiHpp'])->name('data.labarugi.hpp');

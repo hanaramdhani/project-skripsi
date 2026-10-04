@@ -71,6 +71,7 @@
                       <th class="text-center">TANGGAL</th>
                       <th class="text-center">NO. BUKTI</th>
                       <th class="text-center">KODE COA</th>
+                      <th class="text-center">NAMA COA</th>
                       <th class="text-center">SUMBER</th>
                       <th class="text-center">DEBIT</th>
                       <th class="text-center">KREDIT</th>
@@ -83,19 +84,20 @@
                         <td class="text-center">{{ \Carbon\Carbon::parse($row->tgl_jurnal)->format('d/m/Y') }}</td>
                         <td class="text-center">{{ $row->no_bukti }}</td>
                         <td class="text-center">{{ $row->coa_kode }}</td>
+                        <td>{{ $row->coa_nama }}</td>
                         <td>{{ $row->sumber }}</td>
                         <td class="text-right">{{ number_format($row->debit, 2, ',', '.') }}</td>
                         <td class="text-right">{{ number_format($row->kredit, 2, ',', '.') }}</td>
                       </tr>
                     @empty
                       <tr>
-                        <td colspan="7" class="text-center text-muted">Tidak ada data pada periode ini.</td>
+                        <td colspan="8" class="text-center text-muted">Tidak ada data pada periode ini.</td>
                       </tr>
                     @endforelse
                   </tbody>
                   <tfoot class="bg-light">
                     <tr>
-                      <th colspan="5" class="text-right">TOTAL</th>
+                      <th colspan="6" class="text-right">TOTAL</th>
                       <th class="text-right">{{ number_format($total_debit, 2, ',', '.') }}</th>
                       <th class="text-right">{{ number_format($total_kredit, 2, ',', '.') }}</th>
                     </tr>

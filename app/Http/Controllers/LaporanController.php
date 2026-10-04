@@ -50,10 +50,11 @@ class LaporanController extends Controller
     private function dataJurnalUmum($tgl_awal, $tgl_akhir)
     {
         $data = DB::select("
-            SELECT tgl_jurnal, no_bukti, coa_kode, debit, kredit, sumber
-            FROM jurnal_umum
-            WHERE tgl_jurnal BETWEEN ? AND ?
-            ORDER BY tgl_jurnal ASC, no_bukti ASC
+            SELECT j.tgl_jurnal, j.no_bukti, j.coa_kode, c.coa_nama, j.debit, j.kredit, j.sumber
+            FROM jurnal_umum j
+            LEFT JOIN m_coa c ON c.coa_kode = j.coa_kode
+            WHERE j.tgl_jurnal BETWEEN ? AND ?
+            ORDER BY j.tgl_jurnal ASC, j.no_bukti ASC
         ", [$tgl_awal, $tgl_akhir]);
 
         $total_debit = 0;
@@ -201,9 +202,19 @@ class LaporanController extends Controller
     // Laporan Stok (server-side DataTables dari view v_stok_barang)
     // =====================================================================
 
-    public function viewLaporanStok()
+    public function viewLaporanStok(Request $req)
     {
-        return view('LaporanStok');
+        // Rincian persediaan s/d tanggal; saldo pembanding = akun 103 di neraca pada tanggal yang sama.
+        [$tgl_awal, $tgl_akhir] = $this->resolvePeriode($req);
+        $d = $this->dataNeraca($tgl_awal, $tgl_akhir);
+
+        $persediaan = collect($d['grouped']['ASSET']['items'] ?? [])
+            ->first(function ($it) { return trim($it->coa_kode) === '103'; });
+
+        return view('LaporanStok', [
+            'tgl_akhir' => $tgl_akhir,
+            'saldo'     => $persediaan ? (float) $persediaan->saldo : 0,
+        ]);
     }
 
     public function getDataLaporanStok(Request $request)
@@ -347,6 +358,115 @@ class LaporanController extends Controller
                 $row->$c = round((float) $row->$c, 2);
                 unset($row->{"f_$c"});
             }
+            unset($row->f_count);
+        }
+
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $total['count'],
+            'recordsFiltered' => $filtered['count'],
+            'data'            => $rows,
+            'total'           => $total,      // semua barang
+            'filtered'        => $filtered,   // hasil pencarian (sama dengan total kalau tidak mencari)
+            'total_nilai'     => $total['nilai_persediaan'],
+            'filtered_nilai'  => $filtered['nilai_persediaan'],
+        ]);
+    }
+
+    // Rincian persediaan untuk halaman Laporan Stok (kolom lebih lengkap dari modal neraca)
+    public function getDataPersediaanStok(Request $request)
+    {
+        $tgl = (string) $request->input('tgl_akhir', '');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl)) {
+            return response()->json(['error' => 'tgl_akhir tidak valid'], 422);
+        }
+
+        $draw   = (int) $request->input('draw', 1);
+        $start  = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+        $search = trim((string) $request->input('search.value', ''));
+
+        $columnsMap = [
+            0  => 'kd_barang',
+            1  => 'nama',
+            2  => 'satuan_terkecil',
+            3  => 'harga_beli_terakhir',
+            4  => 'harga_jual',
+            5  => 'qty_beli',
+            6  => 'harga_beli',
+            7  => 'nilai_beli',
+            8  => 'qty_jual',
+            9  => 'harga_jual_avg',
+            10 => 'nilai_hpp',
+            11 => 'qty_sisa',
+            12 => 'nilai_persediaan',
+        ];
+        $orderColumn = $columnsMap[(int) $request->input('order.0.column', 12)] ?? 'nilai_persediaan';
+        $orderDir    = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        $orderSql    = $orderColumn === 'kd_barang' ? "kd_barang $orderDir" : "$orderColumn $orderDir, kd_barang ASC";
+
+        $where = '';
+        $bindings = [$tgl];
+        if ($search !== '') {
+            // escape wildcard LIKE milik SQL Server agar dicari sebagai teks biasa
+            $like = '%' . str_replace(['[', '%', '_'], ['[[]', '[%]', '[_]'], $search) . '%';
+            $where = 'WHERE (nama LIKE ? OR kd_barang LIKE ?)';
+            $bindings[] = $like;
+            $bindings[] = $like;
+        }
+
+        $sumCols = ['qty_beli', 'nilai_beli', 'qty_jual', 'nilai_hpp', 'qty_sisa', 'nilai_persediaan'];
+        $windowSums = implode(",
+                   ", array_map(function ($c) {
+            return "SUM($c) OVER() AS f_$c";
+        }, $sumCols));
+
+        // COUNT/SUM OVER() membawa jumlah & total hasil filter di query yang sama dengan halaman data
+        $rows = DB::select("
+            SELECT kd_barang, nama, satuan_terkecil, " . implode(', ', $sumCols) . ",
+                   CASE WHEN qty_beli = 0 THEN 0 ELSE nilai_beli / qty_beli END AS harga_beli,
+                   CASE WHEN qty_jual = 0 THEN 0 ELSE nilai_hpp / qty_jual END AS harga_jual_avg,
+                   harga_beli_terakhir, harga_jual,
+                   COUNT(*) OVER() AS f_count,
+                   $windowSums
+            FROM (
+                SELECT p.*, ISNULL(v.harga_beli, 0) AS harga_beli_terakhir,
+                       ISNULL(j.harga_jual, 0) AS harga_jual
+                FROM dbo.fn_Persediaan_Barang(?) p
+                OUTER APPLY (SELECT TOP 1 harga_beli FROM v_stok_barang WHERE kd_barang = p.kd_barang) v
+                OUTER APPLY (
+                    SELECT TOP 1 bs.harga_jual FROM m_barang_satuan bs
+                    JOIN m_satuan s ON s.kd_satuan = bs.kd_satuan
+                    WHERE bs.kd_barang = p.kd_barang AND s.nama = p.satuan_terkecil
+                ) j
+            ) x
+            $where
+            ORDER BY $orderSql
+            OFFSET $start ROWS FETCH NEXT $length ROWS ONLY
+        ", $bindings);
+
+        if (!empty($rows)) {
+            $filtered = ['count' => (int) $rows[0]->f_count];
+            foreach ($sumCols as $c) {
+                $filtered[$c] = round((float) $rows[0]->{"f_$c"}, 2);
+            }
+        } else {
+            // halaman kosong (mis. tidak ada hasil pencarian): hitung terpisah
+            $filtered = $this->sumPersediaan($tgl, $where, $bindings, $sumCols);
+        }
+
+        $total = $search === '' ? $filtered : $this->sumPersediaan($tgl, '', [$tgl], $sumCols);
+
+        foreach ($rows as $row) {
+            foreach ($sumCols as $c) {
+                $row->$c = round((float) $row->$c, 2);
+                unset($row->{"f_$c"});
+            }
+            $row->harga_beli = round((float) $row->harga_beli, 2);
+            $row->harga_beli_terakhir = round((float) $row->harga_beli_terakhir, 2);
+            $row->harga_jual = round((float) $row->harga_jual, 2);
+            $row->harga_jual_avg = round((float) $row->harga_jual_avg, 2);
             unset($row->f_count);
         }
 
@@ -708,8 +828,8 @@ class LaporanController extends Controller
         $d = $this->dataJurnalUmum($tgl_awal, $tgl_akhir);
         $rows = [];
 
-        $rows[] = ExcelXml::row([ExcelXml::text('JURNAL UMUM', 'title', 6)], 22);
-        $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 6)];
+        $rows[] = ExcelXml::row([ExcelXml::text('JURNAL UMUM', 'title', 7)], 22);
+        $rows[] = [ExcelXml::text($this->periodeLabel($tgl_awal, $tgl_akhir), 'subtitle', 7)];
         $rows[] = []; // baris kosong
 
         $rows[] = ExcelXml::row([
@@ -717,6 +837,7 @@ class LaporanController extends Controller
             ExcelXml::text('TANGGAL', 'header'),
             ExcelXml::text('NO. BUKTI', 'header'),
             ExcelXml::text('KODE COA', 'header'),
+            ExcelXml::text('NAMA COA', 'header'),
             ExcelXml::text('SUMBER', 'header'),
             ExcelXml::text('DEBIT', 'header'),
             ExcelXml::text('KREDIT', 'header'),
@@ -731,6 +852,7 @@ class LaporanController extends Controller
                 ExcelXml::text($ts ? date('d/m/Y', $ts) : $row->tgl_jurnal, 'cellCenter'),
                 ExcelXml::text($row->no_bukti, 'cellCenter'),
                 ExcelXml::text($row->coa_kode, 'cellCenter'),
+                ExcelXml::text($row->coa_nama, 'cell'),
                 ExcelXml::text($row->sumber, 'cell'),
                 ExcelXml::number($row->debit, 'money'),
                 ExcelXml::number($row->kredit, 'money'),
@@ -738,12 +860,12 @@ class LaporanController extends Controller
         }
 
         if ($no === 0) {
-            $rows[] = [ExcelXml::text('Tidak ada data pada periode ini.', 'cellCenter', 6)];
+            $rows[] = [ExcelXml::text('Tidak ada data pada periode ini.', 'cellCenter', 7)];
         }
 
-        // 'TOTAL' di-merge menutup kolom NO..SUMBER (A:E), lalu nilai di DEBIT (F) & KREDIT (G).
+        // 'TOTAL' di-merge menutup kolom NO..SUMBER (A:F), lalu nilai di DEBIT (G) & KREDIT (H).
         $rows[] = [
-            ExcelXml::text('TOTAL', 'totalLabelDark', 4),
+            ExcelXml::text('TOTAL', 'totalLabelDark', 5),
             ExcelXml::number($d['total_debit'], 'moneyTotal'),
             ExcelXml::number($d['total_kredit'], 'moneyTotal'),
         ];

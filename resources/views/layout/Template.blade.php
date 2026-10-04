@@ -289,8 +289,8 @@
                 <!-- <li class="nav-header">TRANSAKSI</li> -->
 
                 <!-- Data with Submenu -->
-                <li class="nav-item {{ request()->is('penjualan') || request()->is('pembelian') || request()->is('pembayaran-pajak') || request()->is('pages') ? 'menu-open' : '' }}">
-                  <a href="#" class="nav-link {{ request()->is('penjualan') || request()->is('pembelian') || request()->is('pembayaran-pajak') || request()->is('pages') ? 'active' : '' }}">
+                <li class="nav-item {{ request()->is('penjualan') || request()->is('pembelian') || request()->is('pembayaran-pajak') || request()->is('biaya-operasional') || request()->is('transaksi-pendapatan') || request()->is('pages') ? 'menu-open' : '' }}">
+                  <a href="#" class="nav-link {{ request()->is('penjualan') || request()->is('pembelian') || request()->is('pembayaran-pajak') || request()->is('biaya-operasional') || request()->is('transaksi-pendapatan') || request()->is('pages') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-book"></i>
                     <p>
                       Transaksi
@@ -314,6 +314,18 @@
                       <a href="{{ url('pembayaran-pajak') }}" class="nav-link {{ request()->is('pembayaran-pajak') ? 'active' : '' }}">
                         <i class="far fa-circle nav-icon"></i>
                         <p>Pembayaran Pajak</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('biaya-operasional') }}" class="nav-link {{ request()->is('biaya-operasional') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Biaya Operasional</p>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{{ url('transaksi-pendapatan') }}" class="nav-link {{ request()->is('transaksi-pendapatan') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Pendapatan</p>
                       </a>
                     </li>
                   </ul>
