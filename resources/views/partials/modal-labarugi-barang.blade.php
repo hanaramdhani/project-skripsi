@@ -58,6 +58,9 @@
                 <th class="text-center">Nama Barang</th>
                 <th class="text-center">Satuan Terkecil</th>
                 <th class="text-center">Qty Jual</th>
+                @if ($nilaiKey === 'nilai_hpp')
+                <th class="text-center">Harga Beli Terakhir (avg)</th>
+                @endif
                 <th class="text-center">{{ $nilaiLabel }}</th>
               </tr>
             </thead>
@@ -67,11 +70,17 @@
               <tr class="bg-info d-none js-foot-filter">
                 <th colspan="3" class="text-right js-foot-filter-label">TOTAL HASIL PENCARIAN</th>
                 <th class="text-right" data-k="qty_jual" data-d="0"></th>
+                @if ($nilaiKey === 'nilai_hpp')
+                <th></th>
+                @endif
                 <th class="text-right" data-k="{{ $nilaiKey }}"></th>
               </tr>
               <tr class="bg-light js-foot-all">
                 <th colspan="3" class="text-right js-foot-all-label">TOTAL SEMUA BARANG</th>
                 <th class="text-right" data-k="qty_jual" data-d="0"></th>
+                @if ($nilaiKey === 'nilai_hpp')
+                <th></th>
+                @endif
                 <th class="text-right" data-k="{{ $nilaiKey }}"></th>
               </tr>
             </tfoot>
@@ -79,7 +88,7 @@
         </div>
         <small class="text-muted">
           @if ($nilaiKey === 'nilai_hpp')
-            HPP = qty terjual x harga beli terakhir, sama dengan sumber jurnal akun 503.
+            HPP = qty terjual x harga beli rata-rata (nilai beli / qty beli), sama dengan sumber jurnal akun 503. Harga Beli (avg) = HPP / qty jual.
           @else
             Penjualan = qty x harga jual, sama dengan sumber jurnal akun 401.
           @endif
@@ -165,7 +174,7 @@
         serverSide: true,
         searchDelay: 400,
         autoWidth: false,
-        order: [[4, 'desc']],
+        order: [[{{ $nilaiKey === 'nilai_hpp' ? 5 : 4 }}, 'desc']],
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
         ajax: {
@@ -178,6 +187,14 @@
           { data: 'nama', render: esc },
           { data: 'satuan_terkecil', className: 'text-center', render: esc },
           { data: 'qty_jual', className: 'text-right', render: num(0, 2) },
+          @if ($nilaiKey === 'nilai_hpp')
+          { data: null, className: 'text-right', orderable: false, searchable: false,
+            render: function (data, type, row) {
+              var q = parseFloat(row.qty_jual) || 0;
+              var avg = q ? (parseFloat(row.nilai_hpp) || 0) / q : 0;
+              return type === 'display' ? '<span>' + fmt(avg, 2, 2) + '</span>' : avg;
+            } },
+          @endif
           { data: key, className: 'text-right font-weight-bold', render: num(2, 2) }
         ],
         language: {

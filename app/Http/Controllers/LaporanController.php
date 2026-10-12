@@ -631,7 +631,10 @@ class LaporanController extends Controller
             $request,
             $from,
             [$awal, $akhir],
-            [0 => 'kd_barang', 1 => 'nama', 2 => 'satuan_terkecil', 3 => 'qty_jual', 4 => $nilaiCol],
+            // modal HPP punya kolom tambahan Harga Beli (avg) di indeks 4 (dihitung di browser, tidak bisa diurutkan)
+            $nilaiCol === 'nilai_hpp'
+                ? [0 => 'kd_barang', 1 => 'nama', 2 => 'satuan_terkecil', 3 => 'qty_jual', 5 => $nilaiCol]
+                : [0 => 'kd_barang', 1 => 'nama', 2 => 'satuan_terkecil', 3 => 'qty_jual', 4 => $nilaiCol],
             'kd_barang',
             ['nama', 'kd_barang'],
             ['qty_jual', $nilaiCol],
