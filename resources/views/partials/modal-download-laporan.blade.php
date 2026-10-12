@@ -68,20 +68,53 @@
   </div>
 </div>
 
-{{-- Form tersembunyi untuk Refresh Jurnal (dipicu tombol di card-tools) --}}
+{{-- Form tersembunyi untuk Refresh Jurnal (dipicu tombol di card-tools); mode diisi dari modal pilihan --}}
 <form id="formRefreshJurnal" method="POST" action="{{ route('jurnal.refresh') }}" class="d-none">
   @csrf
+  <input type="hidden" name="mode" id="refreshJurnalMode" value="terbaru">
 </form>
+
+{{-- Modal pilihan mode Refresh Jurnal --}}
+<div class="modal fade" id="modalRefreshJurnal" tabindex="-1" role="dialog" aria-labelledby="modalRefreshJurnalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="modalRefreshJurnalLabel"><i class="bi bi-arrow-repeat"></i> Refresh Jurnal</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Pilih jenis refresh jurnal umum:</p>
+        <button type="button" class="btn btn-outline-primary btn-block text-left mb-2 btn-pilih-refresh" data-mode="terbaru">
+          <strong><i class="bi bi-lightning-charge"></i> Refresh Terbaru</strong><br>
+          <small class="text-muted">2 hari terakhir sampai sekarang (cepat).</small>
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-block text-left btn-pilih-refresh" data-mode="history">
+          <strong><i class="bi bi-clock-history"></i> Refresh History</strong><br>
+          <small class="text-muted">Seluruh jurnal dari 01/01/2021 sampai sekarang (lebih lama).</small>
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 @push('scripts')
 <script>
   $(function () {
     $('#btnRefreshJurnal').on('click', function () {
-      if (confirm('Generate ulang jurnal umum untuk 2 hari terakhir sampai sekarang?')) {
-        var $b = $(this);
-        $b.prop('disabled', true).html('<i class="bi bi-arrow-repeat"></i> Memproses...');
-        $('#formRefreshJurnal').submit();
-      }
+      $('#modalRefreshJurnal').modal('show');
+    });
+
+    $('.btn-pilih-refresh').on('click', function () {
+      var mode = $(this).data('mode');
+      var $btn = $('#btnRefreshJurnal');
+      $('#refreshJurnalMode').val(mode);
+      $('.btn-pilih-refresh').prop('disabled', true);
+      $btn.prop('disabled', true).html('<i class="bi bi-arrow-repeat"></i> Memproses...');
+      $('#modalRefreshJurnal').modal('hide');
+      $('#formRefreshJurnal').submit();
     });
 
     $('#formDownloadLaporan').on('submit', function (e) {

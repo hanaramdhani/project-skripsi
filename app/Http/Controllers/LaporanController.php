@@ -793,18 +793,24 @@ class LaporanController extends Controller
 
     // =====================================================================
     // Generate / Refresh Jurnal Umum
-    // Memanggil SP sp_Generate_Jurnal_Umum dari 2 hari lalu s/d sekarang.
+    // Memanggil SP sp_Generate_Jurnal_Umum. Mode (input "mode"):
+    //   terbaru (default) : dari 2 hari lalu s/d sekarang
+    //   history           : dari 2021-01-01 s/d sekarang
     // =====================================================================
     public function refreshJurnal(Request $req)
     {
-        $start = date('Y-m-d H:i:s', strtotime('-2 days'));
+        $mode  = $req->input('mode') === 'history' ? 'history' : 'terbaru';
+        $start = $mode === 'history'
+            ? '2021-01-01 00:00:00'
+            : date('Y-m-d H:i:s', strtotime('-2 days'));
         $end   = date('Y-m-d H:i:s');
 
         try {
             DB::statement("EXEC sp_Generate_Jurnal_Umum ?, ?", [$start, $end]);
+            $label = $mode === 'history' ? 'history' : 'terbaru';
             return back()->with('flash', [
                 'type' => 'success',
-                'text' => "Jurnal umum berhasil di-generate untuk periode $start s/d $end.",
+                'text' => "Jurnal umum ($label) berhasil di-generate untuk periode $start s/d $end.",
             ]);
         } catch (\Throwable $e) {
             return back()->with('flash', [
