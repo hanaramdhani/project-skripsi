@@ -70,8 +70,8 @@
                       <th class="text-center" style="width: 50px;">NO</th>
                       <th class="text-center">TANGGAL</th>
                       <th class="text-center">NO. BUKTI</th>
-                      <th class="text-center">KODE COA</th>
-                      <th class="text-center">NAMA COA</th>
+                      <th class="text-center">KODE AKUN</th>
+                      <th class="text-center">NAMA AKUN</th>
                       <th class="text-center">SUMBER</th>
                       <th class="text-center">DEBIT</th>
                       <th class="text-center">KREDIT</th>

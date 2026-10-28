@@ -76,7 +76,7 @@
                 <table class="table table-bordered">
                   <thead class="bg-light">
                     <tr>
-                      <th class="text-center" style="width: 130px;">KODE COA</th>
+                      <th class="text-center" style="width: 130px;">KODE AKUN</th>
                       <th class="text-center">NAMA AKUN</th>
                       <th class="text-center" style="width: 200px;">NILAI</th>
                     </tr>

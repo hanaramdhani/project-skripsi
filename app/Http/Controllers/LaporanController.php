@@ -845,8 +845,8 @@ class LaporanController extends Controller
             ExcelXml::text('NO', 'header'),
             ExcelXml::text('TANGGAL', 'header'),
             ExcelXml::text('NO. BUKTI', 'header'),
-            ExcelXml::text('KODE COA', 'header'),
-            ExcelXml::text('NAMA COA', 'header'),
+            ExcelXml::text('KODE AKUN', 'header'),
+            ExcelXml::text('NAMA AKUN', 'header'),
             ExcelXml::text('SUMBER', 'header'),
             ExcelXml::text('DEBIT', 'header'),
             ExcelXml::text('KREDIT', 'header'),
@@ -892,7 +892,7 @@ class LaporanController extends Controller
         $rows[] = [];
 
         $rows[] = ExcelXml::row([
-            ExcelXml::text('KODE COA', 'header'),
+            ExcelXml::text('KODE AKUN', 'header'),
             ExcelXml::text('NAMA AKUN', 'header'),
             ExcelXml::text('NILAI', 'header'),
         ], 30);
@@ -955,7 +955,7 @@ class LaporanController extends Controller
         $rows[] = [];
 
         $rows[] = ExcelXml::row([
-            ExcelXml::text('KODE COA', 'header'),
+            ExcelXml::text('KODE AKUN', 'header'),
             ExcelXml::text('NAMA AKUN', 'header'),
             ExcelXml::text('JUMLAH', 'header'),
         ], 30);
