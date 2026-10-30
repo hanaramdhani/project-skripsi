@@ -81,7 +81,11 @@ Setelah insert, SP turunan berikut dijalankan berurutan. Perintahnya, lengkap de
 
 Setelah itu `dummy:execute` menampilkan hasil validasi: jumlah barang dengan stok minus (harus 0), serta omzet dan nota per hari.
 
-**Eksekusi manual di SSMS / sqlcmd:** buka file `.sql`, copy **seluruh isinya**, lalu jalankan sebagai **satu batch**. Insert dan SP ikut jalan semua. Kalau insert gagal, batch berhenti dan SP tidak ikut jalan.
+**Eksekusi manual di SSMS / sqlcmd:** buka file `.sql`, copy **seluruh isinya**, lalu jalankan (F5). Insert dan SP ikut jalan semua. Kalau insert gagal, semuanya di-rollback dan SP tidak ikut jalan.
+
+File dipecah menjadi batch kecil dengan pemisah `GO` (sekitar 500 baris per `INSERT`, batch terbesar sekitar 90 KB), supaya hemat memori SQL Server. Ini penting untuk laptop low spec. Sebelumnya seluruh file satu batch sekitar 6 MB, dan itu menimbulkan error `There is insufficient system memory in resource pool 'default'`. Ukuran batch bisa disetel lewat konstanta `BARIS_PER_BATCH`.
+
+Kalau error memori masih muncul, ingest per bulan (`--to=` akhir bulan, lalu ulangi), atau restart service SQL Server.
 
 > Jalankan file SQL segera setelah generate. Kalau di antara generate dan eksekusi ada transaksi baru yang mengubah stok, file akan membatalkan dirinya sendiri (rollback) bila hasilnya membuat stok minus. Generate ulang saja.
 
@@ -101,7 +105,8 @@ Catatan: `php artisan serve` dan command di atas butuh koneksi ke SQL Server ses
 
 ## Pengaman di file SQL
 
-- Seluruh insert ada di dalam satu `BEGIN TRANSACTION`. Kalau satu gagal, semuanya di-rollback (`XACT_ABORT ON` + `TRY/CATCH`).
+- Seluruh insert ada di dalam satu transaksi, walaupun file dipecah jadi banyak batch (`GO`). `XACT_ABORT ON` membatalkan transaksi kalau ada error, dan setiap batch berikutnya diawali pengecekan `@@TRANCOUNT` (THROW 50010) sehingga tidak ada insert parsial. `dummy:execute` juga melakukan rollback kalau salah satu batch gagal.
+- SP turunan hanya jalan kalau nomor transaksi pertama sudah ada di DB, artinya insert sudah ter-commit (THROW 50011 kalau belum).
 - Eksekusi dibatalkan kalau:
   - sudah ada penjualan di periode file tersebut, atau
   - nomor transaksinya sudah terpakai.

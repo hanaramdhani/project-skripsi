@@ -65,6 +65,7 @@ class DummyTransaksiGenerator
     ];
     const REORDER_HARI = 4;         // barang dengan stok < 4 hari penjualan wajib dibeli
     const MAX_ITEM_PER_NOTA_BELI = 20;
+    const BARIS_PER_BATCH = 500;    // baris per INSERT / batch SQL (kecil = hemat memori SQL Server)
     const BATAS_ATAS_NOTA = 1.02;   // nota terakhir boleh melewati target max 2%
     const HARI_LISTRIK = 5;         // tanggal bayar listrik tiap bulan
 
@@ -94,6 +95,7 @@ class DummyTransaksiGenerator
     private $biayaPerHari = [];   // jumlah transaksi biaya per hari => bobot
     private $biayaPeluang = 0.8;  // peluang ada biaya di suatu hari
     private $seqAwal = [];        // tabel => [yymmdd => seq terakhir yang sudah ada]
+    private $guardBatch = '';     // baris pembuka tiap batch SQL: berhenti kalau transaksi sudah di-rollback
     private $rencana = [];        // Y-m-d => ['faktor' => x omzet acuan, 'ket' => string, 'beli' => key MODE_BELI]
 
     // ---- hasil ----
@@ -211,8 +213,24 @@ class DummyTransaksiGenerator
         // Bagian SP di file dijalankan terpisah per statement agar log & error per SP jelas
         $sql = preg_replace('/^-- @sp-mulai$.*?^-- @sp-selesai$/ms', '', $sql);
 
-        ($this->log)('Insert data ...');
-        DB::unprepared($sql);
+        // Jalankan batch demi batch (pemisah GO) di koneksi yang sama; transaksi dibuka di batch pertama
+        // dan di-commit di batch terakhir. Gagal di mana pun -> rollback semua.
+        // Blok komentar /* ... */ (query rollback manual) dibuang agar tidak ikut dieksekusi
+        $sql = preg_replace('~/\*.*?\*/~s', '', $sql);
+        $batch = array_values(array_filter(preg_split('/^GO\s*$/m', $sql), function ($b) {
+            return trim(preg_replace('/^--.*$/m', '', $b)) !== '';
+        }));
+        ($this->log)('Insert data (' . count($batch) . ' batch) ...');
+        try {
+            foreach ($batch as $b) {
+                DB::unprepared($b);
+            }
+        } catch (\Throwable $e) {
+            if ((int) DB::selectOne('SELECT @@TRANCOUNT AS c')->c > 0) {
+                DB::unprepared('ROLLBACK TRANSACTION');
+            }
+            throw $e;
+        }
 
         if ($jalankanSp) {
             foreach (self::perintahSp($from, $to) as $sp) {
@@ -894,17 +912,22 @@ class DummyTransaksiGenerator
                 number_format($r['nilai_beli'], 0, ',', '.'), $r['mode_beli'], $r['biaya'],
                 trim($r['ket'] . ($r['parsial'] ? ' (s/d jam generate)' : ''))));
         }
-        fwrite($f, "--\n-- Bisa dijalankan manual di SSMS / sqlcmd: copy seluruh isi file, jalankan sebagai satu batch.\n");
-        fwrite($f, "-- Semua insert dalam satu transaksi; SP turunan (harga beli, jurnal, PPh per bulan) ikut jalan setelah COMMIT.\n\n");
+        fwrite($f, "--\n-- Bisa dijalankan manual di SSMS / sqlcmd: copy seluruh isi file, lalu jalankan (Execute / F5).\n");
+        fwrite($f, "-- File dipecah jadi batch kecil (pemisah GO) supaya hemat memori SQL Server, tetapi tetap SATU transaksi:\n");
+        fwrite($f, "-- kalau satu batch gagal, semuanya di-rollback dan batch berikutnya otomatis berhenti.\n");
+        fwrite($f, "-- SP turunan (harga beli, jurnal, PPh per bulan) jalan di akhir, hanya kalau insert berhasil.\n\n");
 
-        fwrite($f, "SET NOCOUNT ON;\nSET XACT_ABORT ON;\nBEGIN TRY\nBEGIN TRANSACTION;\n\n");
+        // XACT_ABORT ON: error apa pun membatalkan transaksi. Batch berikutnya mengecek @@TRANCOUNT dan berhenti.
+        $lanjut = "IF @@TRANCOUNT = 0 THROW 50010, 'Batch sebelumnya gagal, transaksi sudah di-rollback. Perbaiki lalu generate ulang.', 1;\n";
+        fwrite($f, "SET NOCOUNT ON;\nSET XACT_ABORT ON;\nBEGIN TRANSACTION;\n\n");
         fwrite($f, "IF EXISTS (SELECT 1 FROM t_penjualan WHERE tanggal >= '$from' AND tanggal < '$sampai')\n");
         fwrite($f, "    THROW 50001, 'Sudah ada penjualan di periode $from s/d $to. Generate ulang dengan periode baru.', 1;\n");
         foreach (['t_penjualan', 't_pembelian', 't_biaya_operasional'] as $tabel) {
             fwrite($f, "IF EXISTS (SELECT 1 FROM $tabel WHERE no_transaksi IN (" . $this->nomorPertama($tabel) . "))\n");
             fwrite($f, "    THROW 50002, 'Nomor transaksi $tabel sudah terpakai. Generate ulang.', 1;\n");
         }
-        fwrite($f, "\n");
+        fwrite($f, "GO\n\n");
+        $this->guardBatch = $lanjut;
 
         $this->tulisInsert($f, 't_pembelian',
             'no_transaksi, kd_supplier, kd_divisi, kd_jenis, kd_kas, no_order, tanggal, tanggal_jatuh_tempo, status, diskon1, diskon2, diskon3, diskon4, pajak, ppnbm, keterangan, kd_user, tanggal_server',
@@ -922,14 +945,18 @@ class DummyTransaksiGenerator
             'no_transaksi, kd_divisi, kd_biaya, kd_jenis, kd_kas, tanggal, nominal, no_bukti, keterangan, kd_user, tanggal_server',
             $this->rowsBiaya);
 
+        fwrite($f, $lanjut);
         fwrite($f, "IF EXISTS (SELECT 1 FROM v_stok_barang WHERE stok < 0)\n");
-        fwrite($f, "    THROW 50003, 'Ada stok minus setelah insert (kemungkinan ada transaksi baru sejak generate). Dibatalkan, silakan generate ulang.', 1;\n\n");
-        fwrite($f, "COMMIT TRANSACTION;\nPRINT 'Insert dummy $from s/d $to selesai.';\nEND TRY\nBEGIN CATCH\n");
-        fwrite($f, "    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\n    THROW;\nEND CATCH;\n\n");
+        fwrite($f, "    THROW 50003, 'Ada stok minus setelah insert (kemungkinan ada transaksi baru sejak generate). Dibatalkan, silakan generate ulang.', 1;\nGO\n\n");
+        fwrite($f, $lanjut);
+        fwrite($f, "COMMIT TRANSACTION;\nPRINT 'Insert dummy $from s/d $to selesai.';\nGO\n\n");
 
-        // Kalau insert gagal, THROW di atas menghentikan batch sehingga SP di bawah tidak ikut jalan
+        // Hanya jalan kalau insert sudah ter-commit (nomor pertama ada di DB)
+        $pertama = $this->rowsJual[0][0];
         fwrite($f, "-- @sp-mulai\n-- SP turunan (hanya jalan kalau insert di atas berhasil)\n");
-        fwrite($f, implode("\n", self::perintahSp($from, $to)) . "\nPRINT 'SP turunan selesai.';\n-- @sp-selesai\n\n");
+        fwrite($f, "IF NOT EXISTS (SELECT 1 FROM t_penjualan WHERE no_transaksi = '$pertama')\n");
+        fwrite($f, "    THROW 50011, 'Insert belum berhasil, SP turunan tidak dijalankan.', 1;\n");
+        fwrite($f, implode("\n", self::perintahSp($from, $to)) . "\nPRINT 'SP turunan selesai.';\n-- @sp-selesai\nGO\n\n");
 
         // PPh bulan X bernomor HPJ<X+1>001 (lihat sp_GenerateHutangPPhFinal)
         $hpj = array_map(function ($bulan) {
@@ -985,13 +1012,14 @@ class DummyTransaksiGenerator
 
     private function tulisInsert($f, $tabel, $kolom, array $rows)
     {
-        foreach (array_chunk($rows, 1000) as $chunk) {
+        foreach (array_chunk($rows, self::BARIS_PER_BATCH) as $chunk) {
+            fwrite($f, $this->guardBatch);
             fwrite($f, "INSERT INTO $tabel ($kolom) VALUES\n");
             $vals = [];
             foreach ($chunk as $r) {
                 $vals[] = '(' . implode(',', array_map([$this, 'nilaiSql'], $r)) . ')';
             }
-            fwrite($f, implode(",\n", $vals) . ";\n\n");
+            fwrite($f, implode(",\n", $vals) . ";\nGO\n\n");
         }
     }
 
