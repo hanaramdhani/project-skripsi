@@ -3,21 +3,57 @@
 Generator data dummy untuk **penjualan, pembelian, dan biaya operasional**. Datanya mengikuti pola transaksi historis, dan **hanya memakai data master yang sudah ada**.
 
 - Kode: [app/Support/DummyTransaksiGenerator.php](../../app/Support/DummyTransaksiGenerator.php)
-- Command: `dummy:generate` dan `dummy:execute` (di [app/Console/Commands/](../../app/Console/Commands/))
+- Command: `dummy:ingest`, `dummy:generate`, dan `dummy:execute` (di [app/Console/Commands/](../../app/Console/Commands/))
 - Output: `database/dummy/output/dummy_transaksi_<dari>_<sampai>_<waktu-generate>.sql`. Setiap kali generate, file barunya terpisah.
+
+## Ringkasan perintah
+
+| Perintah | Fungsi | Menulis ke DB? |
+|---|---|---|
+| `php artisan dummy:ingest` | generate + konfirmasi + eksekusi + SP, sekaligus | ya (setelah konfirmasi) |
+| `php artisan dummy:generate` | hanya membuat file SQL dan menampilkan ringkasan | tidak |
+| `php artisan dummy:execute "<file>"` | menjalankan file SQL yang sudah ada, lalu SP | ya (setelah konfirmasi) |
 
 ## Cara pakai (ingest ulang)
 
-**Paling cepat: satu perintah.** Perintah ini generate, menampilkan ringkasan, minta konfirmasi, lalu eksekusi dan menjalankan SP:
-```bash
-php artisan dummy:ingest
-#   opsinya sama dengan dummy:generate, ditambah:
-#   --no-sp   tanpa menjalankan SP turunan
-#   --force   langsung eksekusi tanpa konfirmasi
-```
-File SQL tetap tersimpan di `database/dummy/output/` sebagai arsip dan untuk rollback manual.
+### Langkah singkat
+1. Jalankan `php artisan dummy:ingest`.
+2. Periksa ringkasan yang tampil:
+   - Rata-rata omzet per bulan harus dalam ±10% dari acuan.
+   - Cek pola harian (hari sepi/ramai, belanja besar, Minggu).
+   - Cek periode di baris pertama (`Periode ... s/d ...`).
+3. Jawab `yes` untuk mengeksekusi, atau `no` untuk membatalkan. Kalau dibatalkan, file SQL tetap tersimpan dan bisa dijalankan nanti dengan `dummy:execute`.
+4. Setelah selesai, periksa tabel validasi di akhir output: **Barang stok minus harus 0**, dan ada penjualan setiap hari.
 
-**Atau dua langkah terpisah**, kalau mau review file atau menjalankannya manual di SSMS:
+Periode default: tanggal penjualan terakhir + 1 hari sampai hari ini (1 hari penuh). Contoh: data terakhir 19 Jul dan hari ini 30 Okt, maka periodenya 20 Jul – 30 Okt. Kalau data sudah sampai hari ini, command berhenti dengan pesan "Tidak ada yang perlu di-generate".
+
+### Contoh
+```bash
+php artisan dummy:ingest                                    # periode otomatis, dengan konfirmasi
+php artisan dummy:ingest --force                            # langsung eksekusi tanpa ditanya
+php artisan dummy:ingest --to=2026-11-05                    # sampai tanggal tertentu
+php artisan dummy:ingest --from=2026-10-29 --to=2026-11-05  # periode manual
+php artisan dummy:ingest --seed=123                         # hasil bisa diulang persis
+php artisan dummy:ingest --quiet-days                       # ringkasan per bulan saja
+php artisan dummy:ingest --no-sp                            # tanpa menjalankan SP
+```
+
+### Opsi
+| Opsi | Berlaku di | Arti |
+|---|---|---|
+| `--from=Y-m-d` | ingest, generate | tanggal mulai (default: penjualan terakhir + 1) |
+| `--to=Y-m-d` | ingest, generate | tanggal akhir (default: hari ini) |
+| `--seed=N` | ingest, generate | seed random; seed sama dengan data acuan sama menghasilkan data yang sama |
+| `--sampai-jam-sekarang` | ingest, generate | transaksi hari ini hanya sampai jam sekarang. Jangan dipakai kalau ingest berikutnya mau lanjut dari besok, karena jam sisa hari itu tidak akan terisi |
+| `--quiet-days` | ingest, generate | tanpa ringkasan per hari |
+| `--no-sp` | ingest, execute | tidak menjalankan SP turunan |
+| `--force` | ingest, execute | langsung eksekusi tanpa konfirmasi |
+
+File SQL tetap tersimpan di `database/dummy/output/` sebagai arsip dan untuk rollback manual. Folder ini ada di `.gitignore`.
+
+### Dua langkah terpisah
+Pakai cara ini kalau mau mereview file dulu atau menjalankannya manual di SSMS:
+
 ```bash
 # 1. Generate file SQL (belum menulis ke DB). Periode default:
 #    tanggal penjualan terakhir + 1 hari  s/d  hari ini (1 hari penuh)
@@ -48,6 +84,20 @@ Setelah itu `dummy:execute` menampilkan hasil validasi: jumlah barang dengan sto
 **Eksekusi manual di SSMS / sqlcmd:** buka file `.sql`, copy **seluruh isinya**, lalu jalankan sebagai **satu batch**. Insert dan SP ikut jalan semua. Kalau insert gagal, batch berhenti dan SP tidak ikut jalan.
 
 > Jalankan file SQL segera setelah generate. Kalau di antara generate dan eksekusi ada transaksi baru yang mengubah stok, file akan membatalkan dirinya sendiri (rollback) bila hasilnya membuat stok minus. Generate ulang saja.
+
+## Kalau ada masalah
+
+| Pesan / kondisi | Penyebab | Yang dilakukan |
+|---|---|---|
+| `Tanggal mulai (...) melewati tanggal akhir (...)` | data penjualan sudah sampai hari ini | tidak ada yang perlu dilakukan; coba lagi besok atau pakai `--to` tanggal ke depan |
+| `Sudah ada N penjualan di periode ...` | periode itu sudah terisi (di generate, atau THROW 50001 di file SQL) | pakai `--from` setelah tanggal penjualan terakhir; jangan menjalankan file yang sama dua kali |
+| `Nomor transaksi ... sudah terpakai` (THROW 50002) | nomor `HM...` di file sudah ada di DB | generate ulang |
+| `Ada stok minus setelah insert` (THROW 50003) | ada transaksi baru antara generate dan eksekusi | generate ulang, lalu eksekusi segera |
+| Insert gagal di tengah | error apa pun di dalam batch | tidak perlu dibersihkan, semuanya otomatis di-rollback |
+| Mau membatalkan data yang sudah masuk | | jalankan query rollback manual di bagian bawah file SQL (dalam komentar `/* ... */`) |
+| Neraca (akun 103) tidak sama dengan rincian persediaan barang | jurnal belum dibuat ulang dengan harga rata-rata terbaru | `EXEC sp_Generate_Jurnal_Umum '<tanggal transaksi pertama>', '<tanggal akhir>'`. `dummy:ingest` sudah melakukannya otomatis |
+
+Catatan: `php artisan serve` dan command di atas butuh koneksi ke SQL Server sesuai `.env`. Password database tidak perlu diketik di command mana pun.
 
 ## Pengaman di file SQL
 
