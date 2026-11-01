@@ -17,6 +17,7 @@ class DummyIngest extends DummyGenerate
                             {--sampai-jam-sekarang : Transaksi hari ini hanya s/d jam sekarang}
                             {--quiet-days : Jangan tampilkan ringkasan per hari}
                             {--no-sp : Jangan jalankan SP setelah insert}
+                            {--ram=auto : Max server memory (MB) sementara selama eksekusi; auto = 60% RAM fisik, off = tidak diubah}
                             {--force : Langsung eksekusi tanpa konfirmasi}';
 
     protected $description = 'Generate file SQL data dummy lalu langsung eksekusi ke database (generate + execute)';
@@ -33,6 +34,7 @@ class DummyIngest extends DummyGenerate
         return $this->call('dummy:execute', [
             'file' => $hasil['file'],
             '--no-sp' => $this->option('no-sp'),
+            '--ram' => $this->option('ram'),
             '--force' => true,
         ]);
     }
