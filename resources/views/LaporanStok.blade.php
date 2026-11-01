@@ -196,7 +196,8 @@
       $('#persJumlahBarang').text(fmt(json.recordsTotal, 0, 0) + ' barang');
       $('#persSaldoNeraca').text('Rp ' + fmt(saldo, 2, 2));
       $('#persSelisih').text('Rp ' + fmt(selisih, 2, 2));
-      if (Math.abs(selisih) < 10) {
+      // Selisih pembulatan HPP per nota ikut membesar seiring jumlah data: toleransi Rp 10 atau 0,001% saldo
+      if (Math.abs(selisih) < Math.max(10, Math.abs(saldo) * 0.00001)) {
         $('#persSelisihKet').attr('class', 'small text-success').text('Selisih pembulatan (wajar)');
       } else {
         $('#persSelisihKet').attr('class', 'small text-danger').text('Selisih besar, coba Refresh Jurnal');
