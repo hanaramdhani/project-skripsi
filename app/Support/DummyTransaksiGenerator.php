@@ -213,7 +213,6 @@ class DummyTransaksiGenerator
         // Bagian SP di file dijalankan terpisah per statement agar log & error per SP jelas
         $sql = preg_replace('/^-- @sp-mulai$.*?^-- @sp-selesai$/ms', '', $sql);
 
-<<<<<<< HEAD
         // Jalankan batch demi batch (pemisah GO) di koneksi yang sama; transaksi dibuka di batch pertama
         // dan di-commit di batch terakhir. Gagal di mana pun -> rollback semua.
         // Blok komentar /* ... */ (query rollback manual) dibuang agar tidak ikut dieksekusi
@@ -232,25 +231,6 @@ class DummyTransaksiGenerator
             }
             throw $e;
         }
-=======
-        // Transaksi dikendalikan dari PHP, bukan BEGIN TRY/TRANSACTION di dalam batch: di ODBC Driver 17 + MARS,
-        // kegagalan di tengah batch hanya muncul sebagai "transaction ... still active at the end of the batch"
-        // dan menutupi error aslinya.
-        $sql = preg_replace('/^SET NOCOUNT ON;\s*SET XACT_ABORT ON;\s*BEGIN TRY\s*BEGIN TRANSACTION;/m', 'SET NOCOUNT ON;', $sql);
-        $sql = preg_replace('/^COMMIT TRANSACTION;.*?^END CATCH;/ms', '', $sql);
-        $sql = preg_replace('~/\*.*?\*/~s', '', $sql); // blok rollback manual (komentar)
-
-        ($this->log)('Insert data ...');
-        DB::transaction(function () use ($sql) {
-            // Insert per statement (bukan satu batch raksasa) agar ringan di laptop low spec
-            foreach (preg_split('/;\s*\n\s*\n/', $sql) as $bagian) {
-                $bagian = trim(preg_replace('/^--.*$/m', '', $bagian));
-                if ($bagian !== '') {
-                    DB::unprepared($bagian . ';');
-                }
-            }
-        });
->>>>>>> 9d30d96 (bug fixing injest)
 
         if ($jalankanSp) {
             foreach (self::perintahSp($from, $to) as $sp) {
