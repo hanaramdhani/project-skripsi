@@ -217,18 +217,24 @@ class DummyTransaksiGenerator
         // dan di-commit di batch terakhir. Gagal di mana pun -> rollback semua.
         // Blok komentar /* ... */ (query rollback manual) dibuang agar tidak ikut dieksekusi
         $sql = preg_replace('~/\*.*?\*/~s', '', $sql);
+        // Dengan MARS (ODBC Driver 17), transaksi T-SQL tidak boleh melewati batas batch ("transaction started in a
+        // MARS batch is still active at the end of the batch"). Jadi BEGIN/COMMIT di file dibuang dan transaksi
+        // dipegang di level koneksi PHP; file tetap valid dijalankan manual di SSMS.
+        $sql = preg_replace('/^BEGIN TRANSACTION;\s*$/m', '', $sql);
+        $sql = preg_replace('/^COMMIT TRANSACTION;\s*$/m', '', $sql);
+        $sql = preg_replace('/^IF @@TRANCOUNT = 0 THROW .*$/m', '', $sql);
         $batch = array_values(array_filter(preg_split('/^GO\s*$/m', $sql), function ($b) {
             return trim(preg_replace('/^--.*$/m', '', $b)) !== '';
         }));
         ($this->log)('Insert data (' . count($batch) . ' batch) ...');
+        DB::beginTransaction();
         try {
             foreach ($batch as $b) {
                 DB::unprepared($b);
             }
+            DB::commit();
         } catch (\Throwable $e) {
-            if ((int) DB::selectOne('SELECT @@TRANCOUNT AS c')->c > 0) {
-                DB::unprepared('ROLLBACK TRANSACTION');
-            }
+            DB::rollBack();
             throw $e;
         }
 
